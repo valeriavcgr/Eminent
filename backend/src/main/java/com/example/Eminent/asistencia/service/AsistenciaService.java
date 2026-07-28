@@ -97,7 +97,7 @@ public class AsistenciaService {
         Inscripcion inscripcion = inscripcionRepo.findById(inscripcionId)
                 .orElseThrow(() -> new IllegalArgumentException("Código QR no válido"));
 
-        if (!inscripcion.getContenidoQr().equals(eventoId)) {
+        if (!inscripcion.getContenidoQr().equals(contenidoQr)) {
             throw new IllegalArgumentException("Código QR no válido");
         }
 

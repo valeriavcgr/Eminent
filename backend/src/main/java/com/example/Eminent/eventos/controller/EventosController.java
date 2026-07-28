@@ -37,8 +37,14 @@ public class EventosController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
-    public ResponseEntity<List<EventoDTO>> listarParaAdminOperador() {
-        List<EventoDTO> lista = eventosService.listarParaAdminOperador().stream()
+    public ResponseEntity<List<EventoDTO>> listarParaAdminOperador(
+            @RequestParam(required = false) Evento.Tipo tipo,
+            @RequestParam(required = false) Evento.Modalidad modalidad,
+            @RequestParam(required = false) Evento.Estado estado,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime fechaDesde,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime fechaHasta) {
+
+        List<EventoDTO> lista = eventosService.listarConFiltros(tipo, modalidad, estado, fechaDesde, fechaHasta).stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(lista);

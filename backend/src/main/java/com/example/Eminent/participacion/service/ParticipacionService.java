@@ -2,16 +2,26 @@ package com.example.Eminent.participacion.service;
 
 import com.example.Eminent.auditoria.entity.Auditoria;
 import com.example.Eminent.auditoria.service.AuditoriaService;
+import com.example.Eminent.asistencia.repository.AsistenciaRepository;
+import com.example.Eminent.certificacion.entity.Certificado;
+import com.example.Eminent.certificacion.repository.CertificadoRepository;
 import com.example.Eminent.eventos.entity.Evento;
 import com.example.Eminent.eventos.repository.EventoRepository;
+import com.example.Eminent.participacion.dto.FichaHistorialDTO;
+import com.example.Eminent.participacion.dto.InscripcionEsperaDTO;
+import com.example.Eminent.participacion.dto.InscripcionHistorialDTO;
 import com.example.Eminent.participacion.entity.Inscripcion;
 import com.example.Eminent.participacion.entity.Participante;
 import com.example.Eminent.participacion.repository.InscripcionRepository;
 import com.example.Eminent.participacion.repository.ParticipanteRepository;
-import com.example.Eminent.participacion.dto.InscripcionEsperaDTO;
-import java.util.List;
+import com.example.Eminent.usuarios.entity.Usuario;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ParticipacionService {
@@ -21,6 +31,8 @@ public class ParticipacionService {
     @Autowired private EventoRepository eventoRepo;
     @Autowired private QrService qrService;
     @Autowired private AuditoriaService auditoriaService;
+    @Autowired private AsistenciaRepository asistenciaRepo;
+    @Autowired private CertificadoRepository certificadoRepo;
 
     public Inscripcion inscribir(Participante datosParticipante, Long eventoId) throws Exception {
         Evento evento = eventoRepo.findById(eventoId)
@@ -115,6 +127,66 @@ public class ParticipacionService {
                         + " al evento " + evento.getNombre(), null);
 
         return actualizada;
+    }
+
+    public List<FichaHistorialDTO> historial(String documento, String correo, String nombre) {
+        List<Participante> participantes = new ArrayList<>();
+
+        if (documento != null && !documento.isBlank()) {
+            participanteRepo.findByDocumento(documento).ifPresent(participantes::add);
+        } else if (correo != null && !correo.isBlank()) {
+            participanteRepo.findByCorreo(correo).ifPresent(participantes::add);
+        } else if (nombre != null && !nombre.isBlank()) {
+            String[] parts = nombre.trim().split("\\s+", 2);
+            String nom = parts[0];
+            String ape = parts.length > 1 ? parts[1] : "";
+            participanteRepo.findByNombreContainingIgnoreCaseOrApellidoContainingIgnoreCase(nom, ape)
+                    .forEach(participantes::add);
+        }
+
+        List<FichaHistorialDTO> resultado = new ArrayList<>();
+        for (Participante p : participantes) {
+            FichaHistorialDTO ficha = new FichaHistorialDTO();
+            ficha.setId(p.getId());
+            ficha.setNombre(p.getNombre());
+            ficha.setApellido(p.getApellido());
+            ficha.setDocumento(p.getDocumento());
+            ficha.setCorreo(p.getCorreo());
+            ficha.setTelefono(p.getTelefono());
+            ficha.setFechaCreacion(p.getFechaCreacion());
+
+            List<Inscripcion> inscripciones = inscripcionRepo.findByParticipanteIdOrderByFechaInscripcionDesc(p.getId());
+            List<InscripcionHistorialDTO> items = new ArrayList<>();
+            for (Inscripcion ins : inscripciones) {
+                InscripcionHistorialDTO item = new InscripcionHistorialDTO();
+                Evento ev = ins.getEvento();
+                item.setEventoId(ev.getId());
+                item.setEventoNombre(ev.getNombre());
+                item.setEventoTipo(ev.getTipo().name());
+                item.setEventoEstado(ev.getEstado().name());
+                item.setInscripcionEstado(ins.getEstado().name());
+                item.setFechaInscripcion(ins.getFechaInscripcion());
+
+                Optional<com.example.Eminent.asistencia.entity.Asistencia> asisOpt =
+                        asistenciaRepo.findByInscripcionId(ins.getId());
+                if (asisOpt.isPresent()) {
+                    com.example.Eminent.asistencia.entity.Asistencia asis = asisOpt.get();
+                    item.setAsistio(true);
+                    item.setFechaAsistencia(asis.getFechaHora());
+                    item.setMetodoAsistencia(asis.getMetodo().name());
+
+                    certificadoRepo.findByAsistenciaId(asis.getId()).ifPresent(cert -> {
+                        item.setCodigoCertificado(cert.getCodigoUnico());
+                    });
+                } else {
+                    item.setAsistio(false);
+                }
+                items.add(item);
+            }
+            ficha.setInscripciones(items);
+            resultado.add(ficha);
+        }
+        return resultado;
     }
 
 }

@@ -90,6 +90,13 @@ public class EventosService {
         return eventoRepository.findByEstadoIn(List.of(Evento.Estado.PROGRAMADO, Evento.Estado.EN_CURSO));
     }
 
+    public List<Evento> listarConFiltros(Evento.Tipo tipo, Evento.Modalidad modalidad, Evento.Estado estado,
+                                         LocalDateTime fechaDesde, LocalDateTime fechaHasta) {
+        LocalDateTime desde = (fechaDesde != null) ? fechaDesde : LocalDateTime.of(2000, 1, 1, 0, 0);
+        LocalDateTime hasta = (fechaHasta != null) ? fechaHasta : LocalDateTime.of(2100, 1, 1, 0, 0);
+        return eventoRepository.buscarConFiltros(tipo, modalidad, estado, desde, hasta);
+    }
+
     @Transactional
     public Evento editar(Long id, EventoDTO dto, Usuario usuario) {
         Evento evento = eventoRepository.findById(id)
