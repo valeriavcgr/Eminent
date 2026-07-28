@@ -47,4 +47,7 @@ public class Inscripcion {
 
     @Column(name = "codigo_qr")
     private String codigoQr; // null mientras esté EN_ESPERA
+
+    @Column(name = "contenido_qr")
+    private String contenidoQr;
 }
