@@ -24,6 +24,9 @@ public class EventoScheduler {
     @Autowired
     private AuditoriaService auditoriaService;
 
+    @Autowired
+    private com.example.Eminent.certificacion.service.CertificacionService certificacionService;
+
     @Scheduled(fixedRate = 60000)
     @Transactional
     public void cambiarEstadosEventos() {
@@ -36,8 +39,8 @@ public class EventoScheduler {
             evento.setEstado(Evento.Estado.EN_CURSO);
             eventoRepository.save(evento);
             auditoriaService.registrar(null, Auditoria.Accion.EDITAR, Auditoria.TipoAfectado.EVENTO,
-                    evento.getId(), "Cambio de estado automático: PROGRAMADO → EN_CURSO", null);
-            log.info("Evento [{}] cambiado de PROGRAMADO a EN_CURSO", evento.getNombre());
+                    evento.getId(), "Cambio de estado automático: PROGRAMADO a EN CURSO", null);
+            log.info("Evento [{}] cambiado de PROGRAMADO a EN CURSO", evento.getNombre());
         }
 
         List<Evento> enCurso = eventoRepository.findByEstadoAndFechaFinLessThanEqual(
@@ -49,14 +52,17 @@ public class EventoScheduler {
             auditoriaService.registrar(null, Auditoria.Accion.EDITAR, Auditoria.TipoAfectado.EVENTO,
                     evento.getId(), "Cambio de estado automático: EN_CURSO → FINALIZADO", null);
             log.info("Evento [{}] cambiado de EN_CURSO a FINALIZADO", evento.getNombre());
-            // TODO (RF-22): Disparar generación automática de certificados aquí
-            // cuando el módulo Certificación esté implementado.
-            // auditoriaService.registrar(null, Auditoria.Accion.CREAR, Auditoria.TipoAfectado.CERTIFICADO,
-            //     evento.getId(), "Generación de certificados para evento " + evento.getNombre(), null);
+
+            try {
+                certificacionService.generarCertificadosDeEvento(evento);
+            } catch (Exception e) {
+                log.error("Error al generar certificados para el evento [{}]: {}", evento.getNombre(), e.getMessage());
+            }
+
         }
 
         if (programados.isEmpty() && enCurso.isEmpty()) {
-            log.debug("EventoScheduler ejecutado sin cambios de estado");
+            log.debug("Sin cambios de estado");
         }
     }
 }

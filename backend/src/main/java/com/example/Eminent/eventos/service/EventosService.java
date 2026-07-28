@@ -7,6 +7,8 @@ import com.example.Eminent.eventos.entity.Evento;
 import com.example.Eminent.eventos.entity.EventoMonitor;
 import com.example.Eminent.eventos.repository.EventoMonitorRepository;
 import com.example.Eminent.eventos.repository.EventoRepository;
+import com.example.Eminent.participacion.entity.Inscripcion;
+import com.example.Eminent.participacion.repository.InscripcionRepository;
 import com.example.Eminent.usuarios.entity.Usuario;
 import com.example.Eminent.usuarios.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -31,16 +33,15 @@ public class EventosService {
     @Autowired
     private AuditoriaService auditoriaService;
 
-    // TODO (Día 8): inyectar InscripcionRepository para completar RF-18 y RF-20
-    // @Autowired
-    // private InscripcionRepository inscripcionRepository;
+    @Autowired
+    private InscripcionRepository inscripcionRepository;
 
     @Transactional
     public Evento crear(EventoDTO dto, Usuario usuario) {
         if (dto.getNombre() == null || dto.getNombre().isBlank() ||
-            dto.getTipo() == null || dto.getModalidad() == null ||
-            dto.getFechaInicio() == null || dto.getFechaFin() == null ||
-            dto.getAforo() == null) {
+                dto.getTipo() == null || dto.getModalidad() == null ||
+                dto.getFechaInicio() == null || dto.getFechaFin() == null ||
+                dto.getAforo() == null) {
             throw new IllegalArgumentException("Todos los campos son obligatorios");
         }
 
@@ -137,10 +138,12 @@ public class EventosService {
             if (dto.getAforo() <= 0) {
                 throw new IllegalArgumentException("El aforo debe ser un número entero mayor a cero");
             }
-            // TODO (RF-18): antes de permitir bajar el aforo, recontar inscripciones ACTIVA
-            // InscripcionRepository.countByEventoIdAndEstado(evento.getId(), Inscripcion.Estado.ACTIVA)
-            // si nuevoAforo < conteoInscritos → rechazar con "El aforo no puede ser menor a la cantidad de inscritos actuales"
-            // Este control se completa cuando el módulo Participación esté implementado.
+
+            long inscritosActivos = inscripcionRepository.countByEventoIdAndEstado(id, Inscripcion.Estado.ACTIVA);
+            if (dto.getAforo() < inscritosActivos) {
+                throw new IllegalArgumentException("El aforo no puede ser menor a la cantidad de inscritos actuales");
+            }
+
             evento.setAforo(dto.getAforo());
         }
 
@@ -198,10 +201,10 @@ public class EventosService {
             throw new IllegalArgumentException("No es posible cancelar un evento que ya ha iniciado o finalizado");
         }
 
-        // TODO (RF-20): validar que el evento no tenga inscritos ACTIVA
-        // long inscritosActivos = inscripcionRepository.countByEventoIdAndEstado(id, Inscripcion.Estado.ACTIVA);
-        // if (inscritosActivos > 0) → rechazar con "No se puede cancelar un evento que ya cuenta con inscritos"
-        // Este control se completa cuando el módulo Participación esté implementado.
+        long inscritosActivos = inscripcionRepository.countByEventoIdAndEstado(id, Inscripcion.Estado.ACTIVA);
+        if (inscritosActivos > 0) {
+            throw new IllegalArgumentException("No se puede cancelar un evento que ya cuenta con inscritos");
+        }
 
         evento.setEstado(Evento.Estado.CANCELADO);
         Evento actualizado = eventoRepository.save(evento);

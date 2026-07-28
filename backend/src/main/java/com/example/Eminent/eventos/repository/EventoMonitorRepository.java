@@ -12,3 +12,4 @@ public interface EventoMonitorRepository extends JpaRepository<EventoMonitor, Lo
 
     boolean existsByEvento_IdAndMonitor_Id(Long eventoId, Long monitorId);
 }
+
