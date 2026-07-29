@@ -65,7 +65,7 @@ public class ParticipacionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
                 "estado", "ACTIVA",
                 "mensaje", "Inscripción exitosa",
-                "codigoQr", resultado.getCodigoQr()
+                "codigoQr", resultado.getContenidoQr()
         ));
     }
 }
