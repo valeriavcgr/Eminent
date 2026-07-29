@@ -77,7 +77,7 @@ public class CertificacionService {
     }
 
     private String generarQrVerificacion(String codigoUnico) throws Exception {
-        String contenido = "http://localhost:8080/api/certificados/verificar/" + codigoUnico;
+        String contenido = "http://localhost:5173/certificados/verificar?codigo=" + codigoUnico;
         QRCodeWriter writer = new QRCodeWriter();
         BitMatrix matrix = writer.encode(contenido, BarcodeFormat.QR_CODE, 300, 300);
 
