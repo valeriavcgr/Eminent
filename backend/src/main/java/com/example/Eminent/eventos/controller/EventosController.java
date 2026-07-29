@@ -45,7 +45,7 @@ public class EventosController {
     @GetMapping("/{id}/monitores")
     public ResponseEntity<?> listarMonitores(@PathVariable Long id) {
         List<EventoMonitor> asignaciones = eventoMonitorRepository.findByEvento_Id(id);
-        List<Map<String, Object>> result = asignaciones.stream().map(a -> Map.of(
+        List<Map<String, Object>> result = asignaciones.stream().map(a -> Map.<String, Object>of(
                 "monitorId", a.getMonitor().getId(),
                 "monitorNombre", a.getMonitor().getNombre(),
                 "monitorCorreo", a.getMonitor().getCorreo(),
