@@ -29,11 +29,9 @@ public class AsistenciaService {
 
     private static final Pattern PATRON_QR = Pattern.compile("^INSCRIPCION-(\\d+)-.*$");
 
-    public ListadoAsistenciaDTO listarParticipantes(Long eventoId, Long monitorId) {
+    public ListadoAsistenciaDTO listarParticipantes(Long eventoId, Long usuarioId) {
         Evento evento = eventoRepo.findById(eventoId)
                 .orElseThrow(() -> new IllegalArgumentException("Evento no encontrado"));
-
-        validarMonitorAsignado(eventoId, monitorId);
 
         List<Inscripcion> activas = inscripcionRepo
                 .findByEventoIdAndEstado(eventoId, Inscripcion.Estado.ACTIVA);

@@ -21,10 +21,10 @@ public class AsistenciaController {
     @Autowired private UsuarioRepository usuarioRepository;
 
     @GetMapping("/eventos/{id}/participantes")
-    @PreAuthorize("hasRole('MONITOR')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR') or hasRole('MONITOR')")
     public ResponseEntity<ListadoAsistenciaDTO> listar(@PathVariable Long id) {
-        Usuario monitor = usuarioActual();
-        return ResponseEntity.ok(service.listarParticipantes(id, monitor.getId()));
+        Usuario usuario = usuarioActual();
+        return ResponseEntity.ok(service.listarParticipantes(id, usuario.getId()));
     }
 
     @PostMapping("/asistencias/manual")

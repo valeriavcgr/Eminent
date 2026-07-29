@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ParticipacionService {
@@ -189,4 +190,7 @@ public class ParticipacionService {
         return resultado;
     }
 
+    public List<Inscripcion> listarInscripcionesPorEvento(Long eventoId) {
+        return inscripcionRepo.findByEventoId(eventoId);
+    }
 }

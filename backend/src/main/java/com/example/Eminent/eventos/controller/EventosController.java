@@ -3,7 +3,10 @@ package com.example.Eminent.eventos.controller;
 import com.example.Eminent.eventos.dto.EventoDTO;
 import com.example.Eminent.eventos.entity.Evento;
 import com.example.Eminent.eventos.entity.EventoMonitor;
+import com.example.Eminent.eventos.repository.EventoMonitorRepository;
 import com.example.Eminent.eventos.service.EventosService;
+import com.example.Eminent.participacion.entity.Inscripcion;
+import com.example.Eminent.participacion.repository.InscripcionRepository;
 import com.example.Eminent.usuarios.entity.Usuario;
 import com.example.Eminent.usuarios.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +29,30 @@ public class EventosController {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private InscripcionRepository inscripcionRepository;
+
+    @Autowired
+    private EventoMonitorRepository eventoMonitorRepository;
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> obtenerPorId(@PathVariable Long id) {
+        Evento evento = eventosService.obtenerPorId(id);
+        return ResponseEntity.ok(toDTO(evento));
+    }
+
+    @GetMapping("/{id}/monitores")
+    public ResponseEntity<?> listarMonitores(@PathVariable Long id) {
+        List<EventoMonitor> asignaciones = eventoMonitorRepository.findByEvento_Id(id);
+        List<Map<String, Object>> result = asignaciones.stream().map(a -> Map.of(
+                "monitorId", a.getMonitor().getId(),
+                "monitorNombre", a.getMonitor().getNombre(),
+                "monitorCorreo", a.getMonitor().getCorreo(),
+                "fechaAsignacion", a.getFechaAsignacion()
+        )).collect(Collectors.toList());
+        return ResponseEntity.ok(result);
+    }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
@@ -114,6 +141,7 @@ public class EventosController {
         dto.setFechaInicio(evento.getFechaInicio());
         dto.setFechaFin(evento.getFechaFin());
         dto.setAforo(evento.getAforo());
+        dto.setInscritos(inscripcionRepository.countByEventoIdAndEstado(evento.getId(), Inscripcion.Estado.ACTIVA));
         dto.setEstado(evento.getEstado().name());
         dto.setCreadoPor(evento.getCreadoPor().getId());
         dto.setFechaCreacion(evento.getFechaCreacion());

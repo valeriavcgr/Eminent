@@ -16,6 +16,7 @@ public class EventoDTO {
     private LocalDateTime fechaInicio;
     private LocalDateTime fechaFin;
     private Integer aforo;
+    private Long inscritos;
     private String estado;
     private Long creadoPor;
     private LocalDateTime fechaCreacion;

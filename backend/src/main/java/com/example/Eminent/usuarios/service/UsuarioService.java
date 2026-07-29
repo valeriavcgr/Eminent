@@ -59,6 +59,11 @@ public class UsuarioService {
         return repo.findAll();
     }
 
+    public Usuario obtenerPorId(Long id) {
+        return repo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+    }
+
     public Usuario editar(Long id, Usuario datos) {
         Usuario existente = repo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));

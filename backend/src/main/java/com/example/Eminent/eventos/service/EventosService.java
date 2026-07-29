@@ -77,6 +77,11 @@ public class EventosService {
         return guardado;
     }
 
+    public Evento obtenerPorId(Long id) {
+        return eventoRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Evento no encontrado con id " + id));
+    }
+
     public List<Evento> listarParaAdminOperador() {
         return eventoRepository.findAll();
     }

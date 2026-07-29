@@ -32,6 +32,13 @@ public class UsuarioController {
         return ResponseEntity.status(HttpStatus.CREATED).body(toDTO(service.crear(usuario)));
     }
 
+    @GetMapping("/usuarios/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UsuarioDTO> obtenerPorId(@PathVariable Long id) {
+        Usuario usuario = service.obtenerPorId(id);
+        return ResponseEntity.ok(toDTO(usuario));
+    }
+
     @GetMapping("/usuarios")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UsuarioDTO>> listar(@RequestParam(required = false) String rol) {

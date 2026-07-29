@@ -1,20 +1,45 @@
 package com.example.Eminent.participacion.controller;
 
+import com.example.Eminent.participacion.dto.InscripcionDTO;
+import com.example.Eminent.participacion.dto.InscripcionDTO;
 import com.example.Eminent.participacion.entity.Inscripcion;
 import com.example.Eminent.participacion.entity.Participante;
 import com.example.Eminent.participacion.service.ParticipacionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/inscripciones")
 public class ParticipacionController {
 
     @Autowired private ParticipacionService service;
+
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
+    public ResponseEntity<?> listarPorEvento(@RequestParam Long eventoId) {
+        List<Inscripcion> lista = service.listarInscripcionesPorEvento(eventoId);
+        return ResponseEntity.ok(lista.stream().map(this::toDTO).collect(Collectors.toList()));
+    }
+
+    private InscripcionDTO toDTO(Inscripcion inscripcion) {
+        InscripcionDTO dto = new InscripcionDTO();
+        dto.setId(inscripcion.getId());
+        dto.setParticipanteId(inscripcion.getParticipante().getId());
+        dto.setEventoId(inscripcion.getEvento().getId());
+        dto.setFechaInscripcion(inscripcion.getFechaInscripcion());
+        dto.setMetodoInscripcion(inscripcion.getMetodoInscripcion().name());
+        dto.setCodigoQr(inscripcion.getCodigoQr());
+        dto.setEstado(inscripcion.getEstado().name());
+        return dto;
+    }
 
     @PostMapping
     public ResponseEntity<?> inscribir(@RequestBody Map<String, Object> body) throws Exception {
