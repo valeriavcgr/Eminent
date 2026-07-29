@@ -6,6 +6,9 @@ import com.example.Eminent.auditoria.repository.AuditoriaRepository;
 import com.example.Eminent.usuarios.entity.Usuario;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,8 +27,20 @@ public class AuditoriaService {
         a.setTipoAfectado(tipo);
         a.setEntidadId(entidadId);
         a.setDescripcion(descripcion);
-        a.setIp(ip);
+        a.setIp(ip != null ? ip : obtenerIpActual());
         repo.save(a);
+    }
+
+    private String obtenerIpActual() {
+        try {
+            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attrs == null) return null; // No hay petición HTTP activa (ej. proceso automático del Scheduler)
+            HttpServletRequest request = attrs.getRequest();
+            String ipForwardeada = request.getHeader("X-Forwarded-For");
+            return (ipForwardeada != null && !ipForwardeada.isBlank()) ? ipForwardeada : request.getRemoteAddr();
+        } catch (IllegalStateException e) {
+            return null;
+        }
     }
 
     public List<AuditoriaDTO> consultar(Long usuarioId, Auditoria.TipoAfectado tipoAfectado,
