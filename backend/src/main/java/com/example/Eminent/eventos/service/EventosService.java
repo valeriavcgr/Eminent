@@ -143,6 +143,9 @@ public class EventosService {
         if (dto.getDescripcion() != null) {
             evento.setDescripcion(dto.getDescripcion());
         }
+        if (dto.getFechaInicio() != null) {
+            evento.setFechaInicio(dto.getFechaInicio());
+        }
         if (dto.getFechaFin() != null) {
             evento.setFechaFin(dto.getFechaFin());
         }
