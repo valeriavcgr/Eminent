@@ -35,19 +35,10 @@ public class PdfService {
              PdfDocument pdf = new PdfDocument(writer);
              Document document = new Document(pdf)) {
 
-            // 1. Fuentes
             PdfFont fuenteTitulo = PdfFontFactory.createFont("Helvetica-Bold");
             PdfFont fuenteNormal = PdfFontFactory.createFont("Helvetica");
 
-            // 2. Marco decorativo (va primero, para quedar "debajo" del texto)
-            PdfCanvas canvas = new PdfCanvas(pdf.getFirstPage());
-            Rectangle pageSize = pdf.getFirstPage().getPageSize();
-            canvas.setStrokeColor(ColorConstants.DARK_GRAY)
-                    .setLineWidth(3)
-                    .rectangle(20, 20, pageSize.getWidth() - 40, pageSize.getHeight() - 40)
-                    .stroke();
-
-            // Título
+            // 1. Primero se agrega TODO el contenido (esto es lo que crea la página 1)
             document.add(new Paragraph("CERTIFICADO DE PARTICIPACIÓN")
                     .setFont(fuenteTitulo)
                     .setFontColor(ColorConstants.DARK_GRAY)
@@ -56,7 +47,6 @@ public class PdfService {
 
             document.add(new Paragraph(" "));
 
-            // Nombre del participante, grande y centrado
             document.add(new Paragraph(nombreParticipante)
                     .setFont(fuenteTitulo)
                     .setFontSize(20)
@@ -65,7 +55,6 @@ public class PdfService {
 
             document.add(new Paragraph(" "));
 
-            //  Datos del certificado
             document.add(new Paragraph("Curso: " + nombreEvento)
                     .setFont(fuenteNormal).setFontSize(14).setTextAlignment(TextAlignment.CENTER));
             document.add(new Paragraph("Duración: " + duracion + " horas")
@@ -77,10 +66,17 @@ public class PdfService {
 
             document.add(new Paragraph(" "));
 
-            // QR de verificación
             Image qrImagen = new Image(ImageDataFactory.create(rutaQr));
             qrImagen.setWidth(100);
             document.add(qrImagen);
+
+
+            PdfCanvas canvas = new PdfCanvas(pdf.getPage(1));
+            Rectangle pageSize = pdf.getPage(1).getPageSize();
+            canvas.setStrokeColor(ColorConstants.DARK_GRAY)
+                    .setLineWidth(3)
+                    .rectangle(20, 20, pageSize.getWidth() - 40, pageSize.getHeight() - 40)
+                    .stroke();
         }
 
         return archivo.toString();
