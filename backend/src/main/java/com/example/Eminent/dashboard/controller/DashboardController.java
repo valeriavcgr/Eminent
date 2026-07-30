@@ -23,7 +23,7 @@ public class DashboardController {
     @Autowired private UsuarioRepository usuarioRepository;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR') or hasRole('MONITOR')")
     public ResponseEntity<DashboardDTO> resumen(
             @RequestParam(required = false) Evento.Tipo tipo,
             @RequestParam(required = false) Evento.Modalidad modalidad,

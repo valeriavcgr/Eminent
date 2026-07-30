@@ -3,6 +3,8 @@ package com.example.Eminent.dashboard.service;
 import com.example.Eminent.asistencia.repository.AsistenciaRepository;
 import com.example.Eminent.dashboard.dto.DashboardDTO;
 import com.example.Eminent.eventos.entity.Evento;
+import com.example.Eminent.eventos.entity.EventoMonitor;
+import com.example.Eminent.eventos.repository.EventoMonitorRepository;
 import com.example.Eminent.eventos.repository.EventoRepository;
 import com.example.Eminent.participacion.entity.Inscripcion;
 import com.example.Eminent.participacion.repository.InscripcionRepository;
@@ -20,6 +22,7 @@ public class DashboardService {
     @Autowired private EventoRepository eventoRepository;
     @Autowired private InscripcionRepository inscripcionRepository;
     @Autowired private AsistenciaRepository asistenciaRepository;
+    @Autowired private EventoMonitorRepository eventoMonitorRepository;
 
     public DashboardDTO obtenerResumen(Evento.Tipo tipo, Evento.Modalidad modalidad, Evento.Estado estado,
                                        LocalDateTime fechaDesde, LocalDateTime fechaHasta, Usuario usuario) {
@@ -29,10 +32,16 @@ public class DashboardService {
 
         List<Evento> eventos = eventoRepository.buscarConFiltros(tipo, modalidad, estado, desde, hasta);
 
-        // Si es Operador, solo ve los eventos que él creó (Admin puede ve todos)
         if (usuario.getRol() == Usuario.Rol.OPERADOR) {
             eventos = eventos.stream()
                     .filter(e -> e.getCreadoPor().getId().equals(usuario.getId()))
+                    .toList();
+        } else if (usuario.getRol() == Usuario.Rol.MONITOR) {
+            List<Long> idsAsignados = eventoMonitorRepository.findByMonitor_Id(usuario.getId()).stream()
+                    .map(em -> em.getEvento().getId())
+                    .toList();
+            eventos = eventos.stream()
+                    .filter(e -> idsAsignados.contains(e.getId()))
                     .toList();
         }
 
