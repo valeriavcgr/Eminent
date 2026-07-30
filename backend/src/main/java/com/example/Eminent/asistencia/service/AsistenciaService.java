@@ -41,6 +41,8 @@ public class AsistenciaService {
             dto.setInscripcionId(i.getId());
             dto.setParticipanteNombre(i.getParticipante().getNombre() + " " + i.getParticipante().getApellido());
             dto.setParticipanteDocumento(i.getParticipante().getDocumento());
+            dto.setParticipanteCorreo(i.getParticipante().getCorreo());
+            dto.setParticipanteTelefono(i.getParticipante().getTelefono());
 
             asistenciaRepo.findByInscripcionId(i.getId()).ifPresentOrElse(a -> {
                 dto.setAsistio(true);
