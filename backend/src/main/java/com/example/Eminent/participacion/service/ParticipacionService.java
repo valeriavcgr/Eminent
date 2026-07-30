@@ -18,6 +18,7 @@ import com.example.Eminent.usuarios.entity.Usuario;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.Eminent.participacion.dto.EstadoInscripcionDTO;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -128,6 +129,28 @@ public class ParticipacionService {
                         + " al evento " + evento.getNombre(), null);
 
         return actualizada;
+    }
+
+    public EstadoInscripcionDTO consultarEstado(String documento, Long eventoId) {
+        Participante participante = participanteRepo.findByDocumento(documento)
+                .orElseThrow(() -> new IllegalArgumentException("No se encontró ningún participante con ese documento"));
+
+        Inscripcion inscripcion = inscripcionRepo.findByParticipanteIdAndEventoId(participante.getId(), eventoId)
+                .orElseThrow(() -> new IllegalArgumentException("No se encontró una inscripción con ese documento para este evento"));
+
+        EstadoInscripcionDTO dto = new EstadoInscripcionDTO();
+        dto.setEstado(inscripcion.getEstado().name());
+
+        if (inscripcion.getEstado() == Inscripcion.Estado.ACTIVA) {
+            dto.setCodigoQr(inscripcion.getContenidoQr());
+        } else {
+            List<Inscripcion> cola = inscripcionRepo
+                    .findByEventoIdAndEstadoOrderByFechaInscripcionAsc(eventoId, Inscripcion.Estado.EN_ESPERA);
+            int posicion = cola.indexOf(inscripcion) + 1;
+            dto.setPosicion(posicion);
+        }
+
+        return dto;
     }
 
     public List<FichaHistorialDTO> historial(String documento, String correo, String nombre) {

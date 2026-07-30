@@ -55,7 +55,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ← también nuevo, esta línea
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/eventos/publicos/**", "/api/inscripciones",
+                        .requestMatchers("/api/auth/**", "/api/eventos/publicos/**", "/api/inscripciones/**"
                                 "/api/certificados/**").permitAll()
                         .anyRequest().authenticated()
                 )

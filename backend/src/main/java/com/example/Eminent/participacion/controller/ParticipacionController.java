@@ -68,4 +68,9 @@ public class ParticipacionController {
                 "codigoQr", resultado.getContenidoQr()
         ));
     }
+
+    @GetMapping("/consultar")
+    public ResponseEntity<?> consultarEstado(@RequestParam String documento, @RequestParam Long eventoId) {
+        return ResponseEntity.ok(service.consultarEstado(documento, eventoId));
+    }
 }
