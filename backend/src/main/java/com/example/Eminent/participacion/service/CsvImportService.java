@@ -19,6 +19,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @Service
 public class CsvImportService {
@@ -28,6 +29,9 @@ public class CsvImportService {
     @Autowired private InscripcionRepository inscripcionRepo;
     @Autowired private QrService qrService;
     @Autowired private AuditoriaService auditoriaService;
+
+    private static final Pattern PATRON_DOCUMENTO = Pattern.compile("^[0-9]{4,15}$");
+    private static final Pattern PATRON_CORREO = Pattern.compile("^[\\w.+-]+@[\\w-]+\\.[a-zA-Z]{2,}$");
 
     public List<FilaCsvDTO> previsualizar(MultipartFile archivo, Long eventoId) throws Exception {
         eventoRepo.findById(eventoId)
@@ -123,6 +127,19 @@ public class CsvImportService {
             fila.setMotivoError("Nombre, apellido y documento son obligatorios");
             return;
         }
+
+        if (!PATRON_DOCUMENTO.matcher(fila.getDocumento()).matches()) {
+            fila.setValida(false);
+            fila.setMotivoError("El documento debe ser numérico (4 a 15 dígitos)");
+            return;
+        }
+
+        if (!fila.getCorreo().isBlank() && !PATRON_CORREO.matcher(fila.getCorreo()).matches()) {
+            fila.setValida(false);
+            fila.setMotivoError("El formato del correo electrónico no es válido");
+            return;
+        }
+
         fila.setValida(true);
         fila.setMotivoError(null);
     }
