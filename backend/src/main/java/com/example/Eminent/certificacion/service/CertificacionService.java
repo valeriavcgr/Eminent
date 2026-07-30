@@ -16,6 +16,7 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.example.Eminent.eventos.dto.EventoDTO;
 
 import java.math.BigDecimal;
 import java.nio.file.Files;
@@ -106,7 +107,24 @@ public class CertificacionService {
                 .orElseThrow(() -> new IllegalArgumentException("Certificado no encontrado o inválido"));
     }
 
-    public List<Evento> eventosFinalizados() {
-        return eventoRepo.findByEstado(Evento.Estado.FINALIZADO);
+    public List<EventoDTO> eventosFinalizados() {
+        return eventoRepo.findByEstado(Evento.Estado.FINALIZADO).stream()
+                .map(this::toEventoDTO)
+                .toList();
+    }
+
+    private EventoDTO toEventoDTO(Evento evento) {
+        EventoDTO dto = new EventoDTO();
+        dto.setId(evento.getId());
+        dto.setNombre(evento.getNombre());
+        dto.setTipo(evento.getTipo().name());
+        dto.setModalidad(evento.getModalidad().name());
+        dto.setDescripcion(evento.getDescripcion());
+        dto.setFechaInicio(evento.getFechaInicio());
+        dto.setFechaFin(evento.getFechaFin());
+        dto.setAforo(evento.getAforo());
+        dto.setEstado(evento.getEstado().name());
+        dto.setFechaCreacion(evento.getFechaCreacion());
+        return dto;
     }
 }

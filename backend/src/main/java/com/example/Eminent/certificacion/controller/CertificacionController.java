@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.example.Eminent.eventos.dto.EventoDTO;
 
 import java.util.List;
 
@@ -20,7 +21,8 @@ public class CertificacionController {
     @Autowired private CertificacionService service;
 
     @GetMapping("/eventos-finalizados")
-    public ResponseEntity<List<Evento>> eventosFinalizados() {
+    public ResponseEntity<List<EventoDTO>> eventosFinalizados() {
+
         return ResponseEntity.ok(service.eventosFinalizados());
     }
 
