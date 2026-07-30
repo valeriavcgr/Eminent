@@ -34,12 +34,24 @@ public class CsvImportService {
     private static final Pattern PATRON_CORREO = Pattern.compile("^[\\w.+-]+@[\\w-]+\\.[a-zA-Z]{2,}$");
 
     public List<FilaCsvDTO> previsualizar(MultipartFile archivo, Long eventoId) throws Exception {
-        eventoRepo.findById(eventoId)
+        Evento evento = eventoRepo.findById(eventoId)
                 .orElseThrow(() -> new IllegalArgumentException("Evento no encontrado"));
 
+        validarEventoImportable(evento);
+
         List<FilaCsvDTO> filas = leerArchivo(archivo);
+        long cupoRestante = evento.getAforo() - inscripcionRepo.countByEventoIdAndEstado(eventoId, Inscripcion.Estado.ACTIVA);
+
         for (FilaCsvDTO fila : filas) {
             validarFila(fila);
+            if (fila.isValida()) {
+                if (cupoRestante <= 0) {
+                    fila.setValida(false);
+                    fila.setMotivoError("No cabe en el cupo disponible");
+                } else {
+                    cupoRestante--;
+                }
+            }
         }
         return filas;
     }
@@ -47,6 +59,8 @@ public class CsvImportService {
     public Map<String, Object> confirmar(MultipartFile archivo, Long eventoId, Usuario ejecutor) throws Exception {
         Evento evento = eventoRepo.findById(eventoId)
                 .orElseThrow(() -> new IllegalArgumentException("Evento no encontrado"));
+
+        validarEventoImportable(evento);
 
         List<FilaCsvDTO> filas = leerArchivo(archivo);
         int exitosas = 0;
@@ -98,6 +112,12 @@ public class CsvImportService {
                         + ": " + exitosas + " exitosas, " + fallidas + " fallidas", null);
 
         return Map.of("exitosas", exitosas, "fallidas", fallidas);
+    }
+
+    private void validarEventoImportable(Evento evento) {
+        if (evento.getEstado() == Evento.Estado.FINALIZADO) {
+            throw new IllegalArgumentException("No se puede importar participantes a un evento finalizado");
+        }
     }
 
     private List<FilaCsvDTO> leerArchivo(MultipartFile archivo) throws Exception {
