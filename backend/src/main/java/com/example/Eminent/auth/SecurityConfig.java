@@ -33,8 +33,7 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-//configuracion CORS
-
+    // Configuracion CORS
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
@@ -48,15 +47,18 @@ public class SecurityConfig {
         return source;
     }
 
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ← también nuevo, esta línea
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/eventos/publicos/**", "/api/inscripciones/**"
-                                "/api/certificados/**").permitAll()
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/eventos/publicos/**",
+                                "/api/inscripciones/**",
+                                "/api/certificados/**"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
