@@ -44,6 +44,12 @@ public class CsvImportService {
 
         for (FilaCsvDTO fila : filas) {
             validarFila(fila);
+
+            if (fila.isValida() && yaEstaInscrito(fila.getDocumento(), eventoId)) {
+                fila.setValida(false);
+                fila.setMotivoError("Ya existe una inscripción para este documento en este evento");
+            }
+
             if (fila.isValida()) {
                 if (cupoRestante <= 0) {
                     fila.setValida(false);
@@ -73,10 +79,13 @@ public class CsvImportService {
                 continue;
             }
 
+            if (yaEstaInscrito(fila.getDocumento(), eventoId)) {
+                fallidas++;
+                continue;
+            }
+
             long activos = inscripcionRepo.countByEventoIdAndEstado(eventoId, Inscripcion.Estado.ACTIVA);
             if (activos >= evento.getAforo()) {
-                fila.setValida(false);
-                fila.setMotivoError("No importada por cupo lleno");
                 fallidas++;
                 continue;
             }
@@ -112,6 +121,12 @@ public class CsvImportService {
                         + ": " + exitosas + " exitosas, " + fallidas + " fallidas", null);
 
         return Map.of("exitosas", exitosas, "fallidas", fallidas);
+    }
+
+    private boolean yaEstaInscrito(String documento, Long eventoId) {
+        return participanteRepo.findByDocumento(documento)
+                .map(p -> inscripcionRepo.findByParticipanteIdAndEventoId(p.getId(), eventoId).isPresent())
+                .orElse(false);
     }
 
     private void validarEventoImportable(Evento evento) {
