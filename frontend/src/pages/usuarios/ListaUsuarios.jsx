@@ -7,6 +7,7 @@ import { Search, Plus, Edit2, ShieldOff, ShieldCheck } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
+import Pagination from '../../components/Pagination';
 
 export default function ListaUsuarios() {
   const [usuarios, setUsuarios] = useState([]);
@@ -14,12 +15,14 @@ export default function ListaUsuarios() {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { token } = useAuth();
-  
+  const [paginaActual, setPaginaActual] = useState(1);
+  const FILAS_POR_PAGINA = 10;
+
   let currentUserEmail = '';
   if (token) {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      currentUserEmail = payload.sub; 
+      currentUserEmail = payload.sub;
     } catch (e) {
       // ignore
     }
@@ -28,6 +31,10 @@ export default function ListaUsuarios() {
   useEffect(() => {
     cargarUsuarios();
   }, []);
+
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [searchTerm]);
 
   const cargarUsuarios = async () => {
     try {
@@ -52,9 +59,15 @@ export default function ListaUsuarios() {
     }
   };
 
-  const filteredUsuarios = usuarios.filter(u => 
+  const filteredUsuarios = usuarios.filter(u =>
     `${u.nombre} ${u.apellido}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.correo.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalPaginas = Math.ceil(filteredUsuarios.length / FILAS_POR_PAGINA);
+  const usuariosPagina = filteredUsuarios.slice(
+    (paginaActual - 1) * FILAS_POR_PAGINA,
+    paginaActual * FILAS_POR_PAGINA
   );
 
   return (
@@ -102,14 +115,14 @@ export default function ListaUsuarios() {
                       Cargando usuarios...
                     </td>
                   </tr>
-                ) : filteredUsuarios.length === 0 ? (
+                ) : usuariosPagina.length === 0 ? (
                   <tr>
                     <td colSpan="4" className="px-6 py-8 text-center text-slate-500">
                       No se encontraron usuarios
                     </td>
                   </tr>
                 ) : (
-                  filteredUsuarios.map((u) => (
+                  usuariosPagina.map((u) => (
                     <tr key={u.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center">
@@ -134,17 +147,17 @@ export default function ListaUsuarios() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             icon={Edit2}
                             onClick={() => navigate(`/usuarios/editar/${u.id}`)}
                             title="Editar usuario"
                           />
                           {u.correo !== currentUserEmail && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               className={u.estado === 'ACTIVO' ? 'text-red-600 hover:text-red-700 hover:bg-red-50' : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'}
                               icon={u.estado === 'ACTIVO' ? ShieldOff : ShieldCheck}
                               onClick={() => toggleEstado(u)}
@@ -159,6 +172,11 @@ export default function ListaUsuarios() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            paginaActual={paginaActual}
+            totalPaginas={totalPaginas}
+            onCambiarPagina={setPaginaActual}
+          />
         </CardContent>
       </Card>
     </div>

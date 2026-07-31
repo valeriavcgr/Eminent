@@ -173,9 +173,9 @@ export default function ListaAsistencia() {
                             <span>Asistió</span>
                           </div>
                         ) : (
-                          <div className="flex items-center text-slate-400">
+                          <div className="flex items-center text-red-400">
                             <XCircle className="w-4 h-4 mr-1" />
-                            <span>Pendiente</span>
+                            <span>No asistió</span>
                           </div>
                         )}
                       </td>

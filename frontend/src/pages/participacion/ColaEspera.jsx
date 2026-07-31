@@ -8,6 +8,7 @@ import { Badge } from '../../components/ui/Badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ArrowLeft, Clock3, IdCard, ArrowUpCircle, Users2 } from 'lucide-react';
+import Pagination from '../../components/Pagination';
 
 export default function ColaEspera() {
   const { id } = useParams();
@@ -15,6 +16,8 @@ export default function ColaEspera() {
   const [cola, setCola] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [promoviendoId, setPromoviendoId] = useState(null);
+  const [paginaActual, setPaginaActual] = useState(1);
+  const FILAS_POR_PAGINA = 10;
 
   useEffect(() => {
     cargarCola();
@@ -45,12 +48,18 @@ export default function ColaEspera() {
     }
   };
 
+  const totalPaginas = Math.ceil(cola.length / FILAS_POR_PAGINA);
+  const colaPagina = cola.slice(
+    (paginaActual - 1) * FILAS_POR_PAGINA,
+    paginaActual * FILAS_POR_PAGINA
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Lista de espera</h1>
-          <p className="text-sm text-slate-500 mt-1">Promueve invitados cuando se extienda el aforo</p>
+          <p className="text-sm text-slate-500 mt-1">Evento #{id} — promueve participantes cuando se libere cupo.</p>
         </div>
         <Button variant="secondary" icon={ArrowLeft} onClick={() => navigate('/eventos')}>
           Volver a Eventos
@@ -81,7 +90,7 @@ export default function ColaEspera() {
                   <tr>
                     <td colSpan="5" className="px-6 py-8 text-center text-slate-500">Cargando cola de espera...</td>
                   </tr>
-                ) : cola.length === 0 ? (
+                ) : colaPagina.length === 0 ? (
                   <tr>
                     <td colSpan="5" className="px-6 py-10 text-center text-slate-400">
                       <Clock3 className="w-8 h-8 mx-auto mb-2 text-slate-300" />
@@ -89,7 +98,7 @@ export default function ColaEspera() {
                     </td>
                   </tr>
                 ) : (
-                  cola.map((c) => (
+                  colaPagina.map((c) => (
                     <tr key={c.inscripcionId} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4">
                         <Badge variant="warning">#{c.posicion}</Badge>
@@ -123,6 +132,11 @@ export default function ColaEspera() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            paginaActual={paginaActual}
+            totalPaginas={totalPaginas}
+            onCambiarPagina={setPaginaActual}
+          />
         </CardContent>
       </Card>
     </div>

@@ -9,6 +9,7 @@ import {
   UploadCloud, FileSpreadsheet, X, CheckCircle2,
   XCircle, ArrowLeft, ClipboardCheck
 } from 'lucide-react';
+import Pagination from '../../components/Pagination';
 
 export default function ImportarCsv() {
   const { id } = useParams();
@@ -20,26 +21,29 @@ export default function ImportarCsv() {
   const [filas, setFilas] = useState(null);
   const [resumen, setResumen] = useState(null);
   const [cargando, setCargando] = useState(false);
+  const [paginaActual, setPaginaActual] = useState(1);
+  const FILAS_POR_PAGINA = 10;
 
-const seleccionarArchivo = async (file) => {
-  if (!file) return;
-  if (!file.name.toLowerCase().endsWith('.csv')) {
-    toast.error('El archivo debe tener extensión .csv');
-    return;
-  }
-  setArchivo(file);
-  setResumen(null);
-  setFilas(null);
-  setCargando(true);
-  try {
-    const datos = await previsualizarCsv(id, file);
-    setFilas(datos);
-  } catch (err) {
-    toast.error(err.response?.data?.mensaje || 'Error al previsualizar el archivo');
-  } finally {
-    setCargando(false);
-  }
-};
+  const seleccionarArchivo = async (file) => {
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      toast.error('El archivo debe tener extensión .csv');
+      return;
+    }
+    setArchivo(file);
+    setResumen(null);
+    setFilas(null);
+    setPaginaActual(1);
+    setCargando(true);
+    try {
+      const datos = await previsualizarCsv(id, file);
+      setFilas(datos);
+    } catch (err) {
+      toast.error(err.response?.data?.mensaje || 'Error al previsualizar el archivo');
+    } finally {
+      setCargando(false);
+    }
+  };
 
   const handleInputChange = (e) => seleccionarArchivo(e.target.files[0]);
 
@@ -48,7 +52,6 @@ const seleccionarArchivo = async (file) => {
     setArrastrando(false);
     seleccionarArchivo(e.dataTransfer.files[0]);
   };
-
 
   const handleConfirmar = async () => {
     setCargando(true);
@@ -73,6 +76,12 @@ const seleccionarArchivo = async (file) => {
 
   const filasValidas = filas?.filter((f) => f.valida).length || 0;
   const filasInvalidas = (filas?.length || 0) - filasValidas;
+
+  const totalPaginas = Math.ceil((filas?.length || 0) / FILAS_POR_PAGINA);
+  const filasPagina = (filas || []).slice(
+    (paginaActual - 1) * FILAS_POR_PAGINA,
+    paginaActual * FILAS_POR_PAGINA
+  );
 
   return (
     <div className="space-y-6">
@@ -171,28 +180,33 @@ const seleccionarArchivo = async (file) => {
                     <th className="px-6 py-3">Motivo</th>
                   </tr>
                 </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {filas.map((f) => (
-                      <tr key={f.numeroFila} className={!f.valida ? 'bg-red-50/50' : ''}>
-                        <td className="px-6 py-3 text-slate-500">{f.numeroFila}</td>
-                        <td className="px-6 py-3 text-slate-800">{f.nombre}</td>
-                        <td className="px-6 py-3 text-slate-800">{f.apellido}</td>
-                        <td className="px-6 py-3 text-slate-600">{f.documento}</td>
-                        <td className="px-6 py-3 text-slate-600">{f.correo || '-'}</td>
-                        <td className="px-6 py-3 text-slate-600">{f.telefono || '-'}</td>
-                        <td className="px-6 py-3">
-                          {f.valida ? (
-                            <span className="flex items-center gap-1 text-emerald-600"><CheckCircle2 className="w-4 h-4" /> Válida</span>
-                          ) : (
-                            <span className="flex items-center gap-1 text-red-500"><XCircle className="w-4 h-4" /> Error</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-3 text-slate-500">{f.motivoError || '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
+                <tbody className="divide-y divide-slate-200">
+                  {filasPagina.map((f) => (
+                    <tr key={f.numeroFila} className={!f.valida ? 'bg-red-50/50' : ''}>
+                      <td className="px-6 py-3 text-slate-500">{f.numeroFila}</td>
+                      <td className="px-6 py-3 text-slate-800">{f.nombre}</td>
+                      <td className="px-6 py-3 text-slate-800">{f.apellido}</td>
+                      <td className="px-6 py-3 text-slate-600">{f.documento}</td>
+                      <td className="px-6 py-3 text-slate-600">{f.correo || '-'}</td>
+                      <td className="px-6 py-3 text-slate-600">{f.telefono || '-'}</td>
+                      <td className="px-6 py-3">
+                        {f.valida ? (
+                          <span className="flex items-center gap-1 text-emerald-600"><CheckCircle2 className="w-4 h-4" /> Válida</span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-red-500"><XCircle className="w-4 h-4" /> Error</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-3 text-slate-500">{f.motivoError || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
             </div>
+            <Pagination
+              paginaActual={paginaActual}
+              totalPaginas={totalPaginas}
+              onCambiarPagina={setPaginaActual}
+            />
           </CardContent>
         </Card>
       )}

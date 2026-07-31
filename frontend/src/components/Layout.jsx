@@ -104,7 +104,6 @@ export default function Layout() {
 
         <div className="absolute bottom-0 w-full p-4 border-t border-slate-800 flex flex-col gap-4">
           <div className="px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
-            <p className="text-xs text-slate-400 uppercase font-semibold tracking-wider mb-1">Rol Actual</p>
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${getRoleColor()}`}></div>
               <p className="text-sm font-medium text-white">{rol}</p>
@@ -123,23 +122,31 @@ export default function Layout() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shrink-0 z-40 shadow-sm">
-          <div className="flex items-center">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="md:hidden text-gray-500 hover:text-gray-700 mr-4"
-            >
-              <Menu size={24} />
-            </button>
-            <div className="flex items-center text-sm text-gray-500">
-              <span>Panel</span>
-              <ChevronRight className="w-4 h-4 mx-2" />
-              <span className="font-medium text-gray-900 capitalize">
-                {location.pathname.split('/')[1] || 'Dashboard'}
-              </span>
-            </div>
+      <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shrink-0 z-40 shadow-sm">
+        <div className="flex items-center">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="md:hidden text-gray-500 hover:text-gray-700 mr-4"
+          >
+            <Menu size={24} />
+          </button>
+          <div className="flex items-center gap-2">
+            <span className={`w-1.5 h-6 rounded-full ${getRoleColor()}`}></span>
+            <h1 className="text-lg font-bold text-slate-900 capitalize">
+              {menuItems.find((item) => location.pathname.startsWith(item.path))?.name || 'Panel'}
+            </h1>
           </div>
-        </header>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm ${getRoleColor()}`}>
+            {rol?.[0]}
+          </div>
+          <div className="hidden sm:block">
+            <p className="text-sm font-semibold text-slate-800 leading-tight">{rol}</p>
+          </div>
+        </div>
+      </header>
 
         {/* Page Content */}
         <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">

@@ -3,10 +3,10 @@ import { listarEventos, cancelarEvento, asignarMonitor } from '../../services/ev
 import { listarUsuarios } from '../../services/usuarioService';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { 
-  Search, 
-  Plus, 
-  Edit2, 
+import {
+  Search,
+  Plus,
+  Edit2,
   Calendar as CalendarIcon,
   Users,
   Ban,
@@ -23,17 +23,18 @@ import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import Pagination from '../../components/Pagination';
 
 export default function ListarEvento() {
   const [eventos, setEventos] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Estados para modal de cancelación
+  const [paginaActual, setPaginaActual] = useState(1);
+  const FILAS_POR_PAGINA = 10;
+
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [eventoToCancel, setEventoToCancel] = useState(null);
 
-  // Estados para modal de asignar monitor
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [eventoToAssign, setEventoToAssign] = useState(null);
   const [monitores, setMonitores] = useState([]);
@@ -45,6 +46,10 @@ export default function ListarEvento() {
   useEffect(() => {
     cargarEventos();
   }, []);
+
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [searchTerm]);
 
   const cargarEventos = async () => {
     try {
@@ -103,8 +108,14 @@ export default function ListarEvento() {
     }
   };
 
-  const filteredEventos = eventos.filter(e => 
+  const filteredEventos = eventos.filter(e =>
     e.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalPaginas = Math.ceil(filteredEventos.length / FILAS_POR_PAGINA);
+  const eventosPagina = filteredEventos.slice(
+    (paginaActual - 1) * FILAS_POR_PAGINA,
+    paginaActual * FILAS_POR_PAGINA
   );
 
   const getEstadoColor = (estado) => {
@@ -174,14 +185,14 @@ export default function ListarEvento() {
                       Cargando eventos...
                     </td>
                   </tr>
-                ) : filteredEventos.length === 0 ? (
+                ) : eventosPagina.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="px-6 py-8 text-center text-slate-500">
                       No se encontraron eventos
                     </td>
                   </tr>
                 ) : (
-                  filteredEventos.map((e) => (
+                  eventosPagina.map((e) => (
                     <tr key={e.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
@@ -218,36 +229,32 @@ export default function ListarEvento() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-1">
-                          
-                          {e.estado !== 'CANCELADO' && e.estado !== 'FINALIZADO' && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              icon={Edit2}
-                              onClick={() => navigate(`/eventos/editar/${e.id}`)}
-                              title="Editar evento"
-                            />
-                          )}
-                          
                           {e.estado !== 'CANCELADO' && e.estado !== 'FINALIZADO' && (
                             <>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                icon={Edit2}
+                                onClick={() => navigate(`/eventos/editar/${e.id}`)}
+                                title="Editar evento"
+                              />
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 icon={ClipboardList}
                                 onClick={() => navigate(`/eventos/${e.id}/cola-espera`)}
                                 title="Cola de Espera"
                               />
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 icon={Upload}
                                 onClick={() => navigate(`/eventos/${e.id}/importar-csv`)}
                                 title="Importar CSV"
                               />
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 icon={UserPlus}
                                 onClick={() => openAssignModal(e)}
                                 title="Asignar Monitor"
@@ -256,19 +263,19 @@ export default function ListarEvento() {
                           )}
 
                           {e.estado !== 'CANCELADO' && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               icon={Users}
                               onClick={() => navigate(`/eventos/${e.id}/asistencia`)}
                               title="Control de Asistencia"
                             />
                           )}
-                          
+
                           {e.estado === 'PROGRAMADO' && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               className="text-red-600 hover:text-red-700 hover:bg-red-50"
                               icon={Ban}
                               onClick={() => openCancelModal(e)}
@@ -283,12 +290,16 @@ export default function ListarEvento() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            paginaActual={paginaActual}
+            totalPaginas={totalPaginas}
+            onCambiarPagina={setPaginaActual}
+          />
         </CardContent>
       </Card>
 
-      {/* Modal Confirmar Cancelación */}
-      <Modal 
-        isOpen={cancelModalOpen} 
+      <Modal
+        isOpen={cancelModalOpen}
         onClose={() => setCancelModalOpen(false)}
         title="Cancelar Evento"
       >
@@ -303,14 +314,14 @@ export default function ListarEvento() {
             Esta acción no se puede deshacer. Los inscritos mantendrán su registro pero el evento aparecerá como cancelado.
           </p>
           <div className="flex w-full gap-3 mt-4">
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               className="flex-1"
               onClick={() => setCancelModalOpen(false)}
             >
               Cerrar
             </Button>
-            <Button 
+            <Button
               className="flex-1 bg-red-600 hover:bg-red-700 text-white"
               onClick={confirmarCancelacion}
             >
@@ -320,9 +331,8 @@ export default function ListarEvento() {
         </div>
       </Modal>
 
-      {/* Modal Asignar Monitor */}
-      <Modal 
-        isOpen={assignModalOpen} 
+      <Modal
+        isOpen={assignModalOpen}
         onClose={() => setAssignModalOpen(false)}
         title="Asignar Monitor"
       >
@@ -330,10 +340,10 @@ export default function ListarEvento() {
           <p className="text-sm text-slate-600">
             Selecciona el usuario (Monitor) que deseas asignar al evento <strong>{eventoToAssign?.nombre}</strong> para encargarse del control de asistencia y escaneo de códigos QR.
           </p>
-          
+
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Monitor disponible</label>
-            <select 
+            <select
               className="block w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
               value={selectedMonitor}
               onChange={(e) => setSelectedMonitor(e.target.value)}
@@ -346,15 +356,15 @@ export default function ListarEvento() {
           </div>
 
           <div className="flex w-full gap-3 mt-4">
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               className="flex-1"
               onClick={() => setAssignModalOpen(false)}
               disabled={isAssigning}
             >
               Cancelar
             </Button>
-            <Button 
+            <Button
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
               onClick={handleAssignMonitor}
               disabled={!selectedMonitor || isAssigning}

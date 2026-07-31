@@ -1,24 +1,27 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { listarEventosMonitor } from '../../services/eventoService';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import { 
-  Calendar as CalendarIcon, 
-  MapPin, 
-  Clock, 
-  Users, 
-  QrCode, 
+import {
+  Calendar as CalendarIcon,
+  MapPin,
+  Clock,
+  Users,
+  QrCode,
   CheckCircle2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import Pagination from '../../components/Pagination';
 
 export default function MisEventos() {
   const [eventos, setEventos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [paginaActual, setPaginaActual] = useState(1);
+  const FILAS_POR_PAGINA = 10;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -37,11 +40,16 @@ export default function MisEventos() {
     }
   };
 
+  const totalPaginas = Math.ceil(eventos.length / FILAS_POR_PAGINA);
+  const eventosPagina = eventos.slice(
+    (paginaActual - 1) * FILAS_POR_PAGINA,
+    paginaActual * FILAS_POR_PAGINA
+  );
+
   const getEstadoColor = (estado) => {
     switch (estado) {
       case 'PROGRAMADO': return 'info';
-      case 'EN CURSO':
-      case 'EN_CURSO': return 'success';
+      case 'EN CURSO': return 'success';
       case 'FINALIZADO': return 'default';
       case 'CANCELADO': return 'danger';
       default: return 'default';
@@ -92,14 +100,14 @@ export default function MisEventos() {
                       Cargando tus eventos...
                     </td>
                   </tr>
-                ) : eventos.length === 0 ? (
+                ) : eventosPagina.length === 0 ? (
                   <tr>
                     <td colSpan="5" className="px-6 py-8 text-center text-slate-500">
                       No tienes eventos asignados en este momento.
                     </td>
                   </tr>
                 ) : (
-                  eventos.map((e) => (
+                  eventosPagina.map((e) => (
                     <tr key={e.id} className="hover:bg-orange-50/30 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
@@ -114,7 +122,7 @@ export default function MisEventos() {
                       <td className="px-6 py-4">
                         <div className="flex items-center text-slate-600">
                           {e.modalidad === 'VIRTUAL' ? <Clock className="w-4 h-4 mr-2" /> : <MapPin className="w-4 h-4 mr-2" />}
-                          <span className="capitalize">{e.modalidad ? e.modalidad.toLowerCase() : ''}</span>
+                          <span className="capitalize">{e.modalidad.toLowerCase()}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -130,29 +138,26 @@ export default function MisEventos() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
-                          {/* Ver Lista: Visible salvo que esté CANCELADO */}
-                          {e.estado !== 'CANCELADO' && (
-                            <Button 
-                              variant="secondary" 
-                              size="sm" 
-                              className="text-slate-700 bg-white border-slate-200 hover:bg-slate-50"
-                              icon={Users}
-                              onClick={() => navigate(`/eventos/${e.id}/asistencia`)}
-                            >
-                              Ver Lista
-                            </Button>
-                          )}
-
-                          {/* Escanear QR: Visible en PROGRAMADO, EN CURSO y EN_CURSO */}
-                          {(e.estado === 'PROGRAMADO' || e.estado === 'EN CURSO' || e.estado === 'EN_CURSO') && (
-                            <Button 
-                              size="sm" 
-                              className="bg-orange-600 hover:bg-orange-700 text-white"
-                              icon={QrCode}
-                              onClick={() => navigate(`/eventos/${e.id}/escaner`)}
-                            >
-                              Escanear QR
-                            </Button>
+                          {e.estado !== 'CANCELADO' && e.estado !== 'FINALIZADO' && (
+                            <>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                className="text-slate-700 bg-white border-slate-200 hover:bg-slate-50"
+                                icon={Users}
+                                onClick={() => navigate(`/eventos/${e.id}/asistencia`)}
+                              >
+                                Ver Lista
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="bg-orange-600 hover:bg-orange-700 text-white"
+                                icon={QrCode}
+                                onClick={() => navigate(`/eventos/${e.id}/escaner`)}
+                              >
+                                Escanear QR
+                              </Button>
+                            </>
                           )}
                         </div>
                       </td>
@@ -162,6 +167,11 @@ export default function MisEventos() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            paginaActual={paginaActual}
+            totalPaginas={totalPaginas}
+            onCambiarPagina={setPaginaActual}
+          />
         </CardContent>
       </Card>
     </div>

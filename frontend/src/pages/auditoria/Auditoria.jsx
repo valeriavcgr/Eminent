@@ -9,6 +9,7 @@ import {
   PlusCircle, Pencil, XCircle, Ban, Activity,
   Cpu, User, Globe, ListFilter
 } from 'lucide-react';
+import Pagination from '../../components/Pagination';
 
 const ICONO_POR_ACCION = {
   CREAR: { icon: PlusCircle, color: 'text-emerald-600' },
@@ -23,9 +24,15 @@ export default function Auditoria() {
   const [registros, setRegistros] = useState([]);
   const [tipoFiltro, setTipoFiltro] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [paginaActual, setPaginaActual] = useState(1);
+  const FILAS_POR_PAGINA = 10;
 
   useEffect(() => {
     cargar();
+  }, [tipoFiltro]);
+
+  useEffect(() => {
+    setPaginaActual(1);
   }, [tipoFiltro]);
 
   const cargar = async () => {
@@ -40,6 +47,12 @@ export default function Auditoria() {
       setIsLoading(false);
     }
   };
+
+  const totalPaginas = Math.ceil(registros.length / FILAS_POR_PAGINA);
+  const registrosPagina = registros.slice(
+    (paginaActual - 1) * FILAS_POR_PAGINA,
+    paginaActual * FILAS_POR_PAGINA
+  );
 
   return (
     <div className="space-y-6">
@@ -87,12 +100,12 @@ export default function Auditoria() {
                   <tr>
                     <td colSpan="6" className="px-6 py-8 text-center text-slate-500">Cargando auditoría...</td>
                   </tr>
-                ) : registros.length === 0 ? (
+                ) : registrosPagina.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="px-6 py-10 text-center text-slate-400">No hay registros para este filtro.</td>
                   </tr>
                 ) : (
-                  registros.map((r) => {
+                  registrosPagina.map((r) => {
                     const config = ICONO_POR_ACCION[r.accion] || { icon: Activity, color: 'text-slate-500' };
                     const Icono = config.icon;
                     const esSistema = !r.usuarioId;
@@ -138,6 +151,11 @@ export default function Auditoria() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            paginaActual={paginaActual}
+            totalPaginas={totalPaginas}
+            onCambiarPagina={setPaginaActual}
+          />
         </CardContent>
       </Card>
     </div>
