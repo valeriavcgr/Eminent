@@ -26,9 +26,6 @@ public class DataInitializer implements CommandLineRunner {
 
     /**
      * Crea la cuenta seed si no existe, o resincroniza su contraseña si ya existe.
-     * Estas 3 cuentas son credenciales de desarrollo conocidas: sin este resync,
-     * un cambio de contraseña seed en el código no toma efecto sobre datos ya
-     * persistidos en una BD anterior, dejando las credenciales documentadas sin funcionar.
      */
     private void crearOActualizarUsuarioSeed(String correo, String contrasena, Usuario.Rol rol, String telefono) {
         Usuario usuario = usuarioRepository.findByCorreo(correo).orElse(null);
