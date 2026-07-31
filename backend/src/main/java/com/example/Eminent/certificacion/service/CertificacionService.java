@@ -26,6 +26,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Servicio para la generación y gestión de certificados de asistencia.
+ * Se encarga de emitir certificados PDF con códigos QR de verificación
+ * al finalizar un evento, y de proporcionar consultas para verificar
+ * la autenticidad de certificados por código o descargar el PDF.
+ */
 @Service
 public class CertificacionService {
 
