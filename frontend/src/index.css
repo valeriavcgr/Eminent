@@ -1,0 +1,5 @@
+/* se activan todas las clases de taiwind para cualquier componente*/
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
