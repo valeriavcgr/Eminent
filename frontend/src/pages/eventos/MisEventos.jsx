@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { listarEventosMonitor } from '../../services/eventoService';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -40,7 +40,8 @@ export default function MisEventos() {
   const getEstadoColor = (estado) => {
     switch (estado) {
       case 'PROGRAMADO': return 'info';
-      case 'EN CURSO': return 'success';
+      case 'EN CURSO':
+      case 'EN_CURSO': return 'success';
       case 'FINALIZADO': return 'default';
       case 'CANCELADO': return 'danger';
       default: return 'default';
@@ -113,7 +114,7 @@ export default function MisEventos() {
                       <td className="px-6 py-4">
                         <div className="flex items-center text-slate-600">
                           {e.modalidad === 'VIRTUAL' ? <Clock className="w-4 h-4 mr-2" /> : <MapPin className="w-4 h-4 mr-2" />}
-                          <span className="capitalize">{e.modalidad.toLowerCase()}</span>
+                          <span className="capitalize">{e.modalidad ? e.modalidad.toLowerCase() : ''}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -129,26 +130,29 @@ export default function MisEventos() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
+                          {/* Ver Lista: Visible salvo que esté CANCELADO */}
                           {e.estado !== 'CANCELADO' && (
-                            <>
-                              <Button 
-                                variant="secondary" 
-                                size="sm" 
-                                className="text-slate-700 bg-white border-slate-200 hover:bg-slate-50"
-                                icon={Users}
-                                onClick={() => navigate(`/eventos/${e.id}/asistencia`)}
-                              >
-                                Ver Lista
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                className="bg-orange-600 hover:bg-orange-700 text-white"
-                                icon={QrCode}
-                                onClick={() => navigate(`/eventos/${e.id}/escaner`)}
-                              >
-                                Escanear QR
-                              </Button>
-                            </>
+                            <Button 
+                              variant="secondary" 
+                              size="sm" 
+                              className="text-slate-700 bg-white border-slate-200 hover:bg-slate-50"
+                              icon={Users}
+                              onClick={() => navigate(`/eventos/${e.id}/asistencia`)}
+                            >
+                              Ver Lista
+                            </Button>
+                          )}
+
+                          {/* Escanear QR: Visible en PROGRAMADO, EN CURSO y EN_CURSO */}
+                          {(e.estado === 'PROGRAMADO' || e.estado === 'EN CURSO' || e.estado === 'EN_CURSO') && (
+                            <Button 
+                              size="sm" 
+                              className="bg-orange-600 hover:bg-orange-700 text-white"
+                              icon={QrCode}
+                              onClick={() => navigate(`/eventos/${e.id}/escaner`)}
+                            >
+                              Escanear QR
+                            </Button>
                           )}
                         </div>
                       </td>

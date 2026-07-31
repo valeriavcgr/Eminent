@@ -229,7 +229,7 @@ export default function ListarEvento() {
                             />
                           )}
                           
-                          {e.estado !== 'CANCELADO' && (
+                          {e.estado !== 'CANCELADO' && e.estado !== 'FINALIZADO' && (
                             <>
                               <Button 
                                 variant="ghost" 
@@ -248,18 +248,21 @@ export default function ListarEvento() {
                               <Button 
                                 variant="ghost" 
                                 size="sm" 
-                                icon={Users}
-                                onClick={() => navigate(`/eventos/${e.id}/asistencia`)}
-                                title="Control de Asistencia"
-                              />
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
                                 icon={UserPlus}
                                 onClick={() => openAssignModal(e)}
                                 title="Asignar Monitor"
                               />
                             </>
+                          )}
+
+                          {e.estado !== 'CANCELADO' && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              icon={Users}
+                              onClick={() => navigate(`/eventos/${e.id}/asistencia`)}
+                              title="Control de Asistencia"
+                            />
                           )}
                           
                           {e.estado === 'PROGRAMADO' && (
