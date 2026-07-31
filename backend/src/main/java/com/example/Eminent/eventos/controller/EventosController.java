@@ -10,38 +10,45 @@ import com.example.Eminent.participacion.repository.InscripcionRepository;
 import com.example.Eminent.usuarios.entity.Usuario;
 import com.example.Eminent.usuarios.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Controlador REST para la gestión de eventos del sistema Eminent.
+ * Proporciona endpoints para crear, listar (con filtros y paginación),
+ * actualizar, cancelar eventos y asignar monitores.
+ * ADMIN y OPERADOR pueden gestionar todos los eventos;
+ * MONITOR solo puede ver sus eventos asignados.
+ */
 @RestController
 @RequestMapping("/api/eventos")
 public class EventosController {
 
-    @Autowired
-    private EventosService eventosService;
+    @Autowired private EventosService eventosService;
+    @Autowired private UsuarioRepository usuarioRepository;
+    @Autowired private InscripcionRepository inscripcionRepository;
+    @Autowired private EventoMonitorRepository eventoMonitorRepository;
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-
-    @Autowired
-    private InscripcionRepository inscripcionRepository;
-
-    @Autowired
-    private EventoMonitorRepository eventoMonitorRepository;
-
+    /**
+     * Obtiene los detalles completos de un evento por su ID.
+     */
     @GetMapping("/{id}")
     public ResponseEntity<?> obtenerPorId(@PathVariable Long id) {
         Evento evento = eventosService.obtenerPorId(id);
         return ResponseEntity.ok(toDTO(evento));
     }
 
+    /**
+     * Lista los monitores asignados a un evento específico.
+     */
     @GetMapping("/{id}/monitores")
     public ResponseEntity<?> listarMonitores(@PathVariable Long id) {
         List<EventoMonitor> asignaciones = eventoMonitorRepository.findByEvento_Id(id);
@@ -54,6 +61,9 @@ public class EventosController {
         return ResponseEntity.ok(result);
     }
 
+    /**
+     * Crea un nuevo evento. Solo accesible para ADMIN y OPERADOR.
+     */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
     public ResponseEntity<?> crear(@RequestBody EventoDTO dto) {
@@ -62,39 +72,47 @@ public class EventosController {
         return ResponseEntity.ok(toDTO(creado));
     }
 
+    /**
+     * Lista eventos con filtros opcionales por tipo, modalidad, estado y rango de fechas,
+     * con soporte de paginación. Solo accesible para ADMIN y OPERADOR.
+     */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
-    public ResponseEntity<List<EventoDTO>> listarParaAdminOperador(
+    public ResponseEntity<Page<EventoDTO>> listarParaAdminOperador(
             @RequestParam(required = false) Evento.Tipo tipo,
             @RequestParam(required = false) Evento.Modalidad modalidad,
             @RequestParam(required = false) Evento.Estado estado,
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime fechaDesde,
-            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime fechaHasta) {
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime fechaHasta,
+            Pageable pageable) {
 
-        List<EventoDTO> lista = eventosService.listarConFiltros(tipo, modalidad, estado, fechaDesde, fechaHasta).stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(lista);
+        Page<Evento> pagina = eventosService.listarConFiltros(tipo, modalidad, estado, fechaDesde, fechaHasta, pageable);
+        return ResponseEntity.ok(pagina.map(this::toDTO));
     }
 
+    /**
+     * Lista los eventos asignados al MONITOR que ha hecho la petición, con paginación.
+     */
     @GetMapping("/mis-eventos")
     @PreAuthorize("hasRole('MONITOR')")
-    public ResponseEntity<List<EventoDTO>> listarParaMonitor() {
+    public ResponseEntity<Page<EventoDTO>> listarParaMonitor(Pageable pageable) {
         Usuario usuario = obtenerUsuarioActual();
-        List<EventoDTO> lista = eventosService.listarParaMonitor(usuario.getId()).stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(lista);
+        Page<Evento> pagina = eventosService.listarParaMonitor(usuario.getId(), pageable);
+        return ResponseEntity.ok(pagina.map(this::toDTO));
     }
 
+    /**
+     * Lista eventos públicos (PROGRAMADO o EN_CURSO) sin necesidad de autenticación, con paginación.
+     */
     @GetMapping("/publicos")
-    public ResponseEntity<List<EventoDTO>> listarPublicos() {
-        List<EventoDTO> lista = eventosService.listarPublicos().stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(lista);
+    public ResponseEntity<Page<EventoDTO>> listarPublicos(Pageable pageable) {
+        Page<Evento> pagina = eventosService.listarPublicos(pageable);
+        return ResponseEntity.ok(pagina.map(this::toDTO));
     }
 
+    /**
+     * Edita un evento existente. Solo accesible para ADMIN y OPERADOR.
+     */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
     public ResponseEntity<?> editar(@PathVariable Long id, @RequestBody EventoDTO dto) {
@@ -103,6 +121,9 @@ public class EventosController {
         return ResponseEntity.ok(toDTO(actualizado));
     }
 
+    /**
+     * Asigna un monitor a un evento. Solo accesible para ADMIN y OPERADOR.
+     */
     @PostMapping("/{id}/monitores")
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
     public ResponseEntity<?> asignarMonitor(@PathVariable Long id, @RequestParam Long monitorId) {
@@ -116,6 +137,10 @@ public class EventosController {
         ));
     }
 
+    /**
+     * Cancela un evento (cambia su estado a CANCELADO).
+     * Solo accesible para ADMIN y OPERADOR. No permite cancelar eventos con inscritos.
+     */
     @PatchMapping("/{id}/cancelar")
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
     public ResponseEntity<?> cancelar(@PathVariable Long id) {
@@ -124,6 +149,7 @@ public class EventosController {
         return ResponseEntity.ok(toDTO(cancelado));
     }
 
+    /** Obtiene el usuario actualmente autenticado desde el contexto de seguridad. */
     private Usuario obtenerUsuarioActual() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String correo = authentication.getName();
@@ -131,6 +157,7 @@ public class EventosController {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + correo));
     }
 
+    /** Convierte una entidad Evento a su DTO correspondiente para la respuesta API. */
     private EventoDTO toDTO(Evento evento) {
         EventoDTO dto = new EventoDTO();
         dto.setId(evento.getId());

@@ -1,5 +1,4 @@
 package com.example.Eminent.eventos.service;
-
 import com.example.Eminent.auditoria.entity.Auditoria;
 import com.example.Eminent.auditoria.service.AuditoriaService;
 import com.example.Eminent.eventos.dto.EventoDTO;
@@ -13,11 +12,19 @@ import com.example.Eminent.usuarios.entity.Usuario;
 import com.example.Eminent.usuarios.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Servicio de negocio para la gestión de eventos.
+ * Maneja la creación, consulta, edición y cancelación de eventos,
+ * así como la asignación de monitores. Integra auditoría para registrar
+ * todas las acciones relevantes realizadas sobre eventos.
+ */
 @Service
 public class EventosService {
 
@@ -82,24 +89,28 @@ public class EventosService {
                 .orElseThrow(() -> new EntityNotFoundException("Evento no encontrado con id " + id));
     }
 
-    public List<Evento> listarParaAdminOperador() {
-        return eventoRepository.findAll();
+    public Page<Evento> listarParaAdminOperador(Pageable pageable) {
+        return eventoRepository.findAll(pageable);
     }
 
-    public List<Evento> listarParaMonitor(Long monitorId) {
+    public Page<Evento> listarParaMonitor(Long monitorId, Pageable pageable) {
         List<EventoMonitor> asignaciones = eventoMonitorRepository.findByMonitor_Id(monitorId);
-        return asignaciones.stream().map(EventoMonitor::getEvento).toList();
+        List<Evento> eventos = asignaciones.stream().map(EventoMonitor::getEvento).toList();
+        return new org.springframework.data.domain.PageImpl<>(eventos, pageable, eventos.size());
     }
 
-    public List<Evento> listarPublicos() {
-        return eventoRepository.findByEstadoIn(List.of(Evento.Estado.PROGRAMADO, Evento.Estado.EN_CURSO));
+    public Page<Evento> listarPublicos(Pageable pageable) {
+        List<Evento> eventos = eventoRepository.findByEstadoIn(
+                List.of(Evento.Estado.PROGRAMADO, Evento.Estado.EN_CURSO));
+        return new org.springframework.data.domain.PageImpl<>(eventos, pageable, eventos.size());
     }
 
-    public List<Evento> listarConFiltros(Evento.Tipo tipo, Evento.Modalidad modalidad, Evento.Estado estado,
-                                         LocalDateTime fechaDesde, LocalDateTime fechaHasta) {
+    public Page<Evento> listarConFiltros(Evento.Tipo tipo, Evento.Modalidad modalidad, Evento.Estado estado,
+                                                  LocalDateTime fechaDesde, LocalDateTime fechaHasta,
+                                                  Pageable pageable) {
         LocalDateTime desde = (fechaDesde != null) ? fechaDesde : LocalDateTime.of(2000, 1, 1, 0, 0);
         LocalDateTime hasta = (fechaHasta != null) ? fechaHasta : LocalDateTime.of(2100, 1, 1, 0, 0);
-        return eventoRepository.buscarConFiltros(tipo, modalidad, estado, desde, hasta);
+        return eventoRepository.buscarConFiltros(tipo, modalidad, estado, desde, hasta, pageable);
     }
 
     @Transactional
