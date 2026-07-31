@@ -11,9 +11,18 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+/**
+ * Handler global de excepciones para la API REST de Eminent.
+ * Captura excepciones de autenticación, autorización y argumentos inválidos,
+ * devolviendo respuestas JSON estructuradas con código HTTP y mensaje descriptivo.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * Maneja credenciales incorrectas durante el login.
+     * Retorna 401 Unauthorized con mensaje de correo o contraseña inválidos.
+     */
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<?> handleBadCredentials(BadCredentialsException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
@@ -22,6 +31,10 @@ public class GlobalExceptionHandler {
                 "timestamp", LocalDateTime.now()));
     }
 
+    /**
+     * Maneja intentos de acceso de usuarios inactivos.
+     * Retorna 401 Unauthorized indicando que el usuario debe contactar al administrador.
+     */
     @ExceptionHandler(DisabledException.class)
     public ResponseEntity<?> handleDisabled(DisabledException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
@@ -30,6 +43,10 @@ public class GlobalExceptionHandler {
                 "timestamp", LocalDateTime.now()));
     }
 
+    /**
+     * Maneja intentos de acceso a recursos sin los permisos necesarios.
+     * Retorna 403 Forbidden con mensaje de permisos insuficientes.
+     */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<?> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
@@ -38,6 +55,10 @@ public class GlobalExceptionHandler {
                 "timestamp", LocalDateTime.now()));
     }
 
+    /**
+     * Maneja errores de argumentos inválidos (por ejemplo, validación fallida).
+     * Retorna 400 Bad Request con el mensaje de error específico.
+     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<?> handleIllegalArgument(IllegalArgumentException ex) {
         return ResponseEntity.badRequest().body(Map.of(

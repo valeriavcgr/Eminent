@@ -16,6 +16,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Servicio para obtener datos resumidos del dashboard principal.
+ * Consulta estadísticas de eventos, inscripciones y asistencias
+ * aplicando filtros según el rol del usuario (Operador ve solo sus eventos).
+ */
 @Service
 public class DashboardService {
 
