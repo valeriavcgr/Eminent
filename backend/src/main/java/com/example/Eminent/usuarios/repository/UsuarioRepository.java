@@ -1,13 +1,25 @@
 package com.example.Eminent.usuarios.repository;
 
 import com.example.Eminent.usuarios.entity.Usuario;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
 import java.util.Optional;
 
+/**
+ * Repositorio JPA para la entidad {@link Usuario}.
+ * Proporciona operaciones CRUD estándar más consultas personalizadas
+ * para búsqueda por correo, verificación de unicidad y paginación por rol.
+ */
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
+
+    /** Busca un usuario por su correo electrónico. */
     Optional<Usuario> findByCorreo(String correo);
+
+    /** Verifica si existe un usuario con el correo dado. */
     boolean existsByCorreo(String correo);
-    List<Usuario> findByRol(Usuario.Rol rol);
+
+    /** Lista paginada de usuarios filtrados por su rol. */
+    Page<Usuario> findByRol(Usuario.Rol rol, Pageable pageable);
 }
