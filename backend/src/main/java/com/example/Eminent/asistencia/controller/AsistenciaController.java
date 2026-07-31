@@ -13,6 +13,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+/**
+ * Controlador REST para el registro de asistencia de participantes en eventos.
+ * Permite listar participantes de un evento y registrar asistencia de forma manual
+ * (por ID de inscripción) o mediante escaneo de código QR. Solo MONITOR puede registrar.
+ */
 @RestController
 @RequestMapping("/api")
 public class AsistenciaController {
@@ -20,6 +25,10 @@ public class AsistenciaController {
     @Autowired private AsistenciaService service;
     @Autowired private UsuarioRepository usuarioRepository;
 
+    /**
+     * Lista todos los participantes de un evento con su estado de asistencia.
+     * Accesible por ADMIN, OPERADOR y MONITOR.
+     */
     @GetMapping("/eventos/{id}/participantes")
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR') or hasRole('MONITOR')")
     public ResponseEntity<ListadoAsistenciaDTO> listar(@PathVariable Long id) {
@@ -27,6 +36,10 @@ public class AsistenciaController {
         return ResponseEntity.ok(service.listarParticipantes(id, usuario.getId()));
     }
 
+    /**
+     * Registra la asistencia de un participante de forma manual proporcionando
+     * el ID de inscripción. Solo accesible para MONITOR.
+     */
     @PostMapping("/asistencias/manual")
     @PreAuthorize("hasRole('MONITOR')")
     public ResponseEntity<?> registrarManual(@RequestBody Map<String, Long> body) {
@@ -35,6 +48,10 @@ public class AsistenciaController {
         return ResponseEntity.ok(Map.of("mensaje", "Asistencia registrada correctamente"));
     }
 
+    /**
+     * Registra la asistencia de un participante mediante el escaneo de un
+     * código QR codificado con el ID de inscripción y evento. Solo accesible para MONITOR.
+     */
     @PostMapping("/asistencias/qr")
     @PreAuthorize("hasRole('MONITOR')")
     public ResponseEntity<?> registrarPorQr(@RequestBody Map<String, Object> body) {
@@ -45,6 +62,7 @@ public class AsistenciaController {
         return ResponseEntity.ok(Map.of("mensaje", "Asistencia registrada correctamente vía QR"));
     }
 
+    /** Obtiene el usuario actualmente autenticado desde el contexto de seguridad. */
     private Usuario usuarioActual() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return usuarioRepository.findByCorreo(auth.getName())
