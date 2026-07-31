@@ -111,20 +111,10 @@ export default function EscanerQr() {
         procesandoRef.current = false;
         setMensaje('');
         
-        if (exito) {
-          // Volver a la lista de eventos según el rol
-          await detenerCamara();
-          if (rol === 'MONITOR') {
-            navigate('/eventos/mis-eventos');
-          } else {
-            navigate('/eventos');
-          }
-        } else {
-          // Si fue error, reanudar cámara para intentar de nuevo
-          if (scannerRef.current && scannerRef.current.getState() === 2 /* PAUSED */) {
-             scannerRef.current.resume();
-          }
-        }
+// Detener cámara antes de cambiar de vista
+        await detenerCamara();
+        // Redirigir SIEMPRE a la asistencia del evento actual usando el 'id' de la URL
+        navigate(`/eventos/${id}/asistencia`);
       }, 300); // Tiempo para la animación de salida
     }, 1500); // Reducido a 1.5 segundos para que la redirección sea más rápida
   };

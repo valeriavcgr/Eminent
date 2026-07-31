@@ -50,7 +50,7 @@ export default function ColaEspera() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Lista de espera</h1>
-          <p className="text-sm text-slate-500 mt-1">Evento #{id} — promueve participantes cuando se libere cupo.</p>
+          <p className="text-sm text-slate-500 mt-1">Promueve invitados cuando se extienda el aforo</p>
         </div>
         <Button variant="secondary" icon={ArrowLeft} onClick={() => navigate('/eventos')}>
           Volver a Eventos

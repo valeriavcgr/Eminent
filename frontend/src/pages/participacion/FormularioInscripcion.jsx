@@ -67,7 +67,7 @@ export default function FormularioInscripcion() {
                 variant="secondary"
                 icon={Download}
                 onClick={handleDescargarQr}
-                className="w-full mb-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+                className="w-full mb-3 bg-blue-600 hover:bg-blue-700 text-gray-700"
               >
                 Descargar mi código QR
               </Button>
@@ -81,7 +81,7 @@ export default function FormularioInscripcion() {
               <p className="text-slate-600">
                 Posición actual: <span className="font-bold text-xl text-slate-900 ml-1">#{resultado.posicion}</span>
               </p>
-              <p className="text-sm text-slate-500 mt-4 mb-6">Te notificaremos inmediatamente a tu correo si se libera un cupo.</p>
+              <p className="text-sm text-slate-500 mt-4 mb-6">Revisa en la sección de Consultar Inscripción para ver si ya fuiste promovido</p>
             </>
           )}
           <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate('/')} className="w-full mt-2 rounded-xl border border-slate-200">

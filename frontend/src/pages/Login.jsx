@@ -23,7 +23,7 @@ export default function Login() {
       const payload = JSON.parse(atob(token.split('.')[1]));
       guardarSesion(token, payload.rol);
       if (payload.rol === 'MONITOR') {
-        navigate('/eventos/mis-eventos');
+        navigate('/dashboard');
       } else {
         navigate('/dashboard');
       }

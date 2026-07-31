@@ -106,7 +106,7 @@ export default function ConsultarInscripcion() {
                   <QRCodeCanvas value={resultado.codigoQr} size={180} />
                 </div>
               </div>
-              <Button variant="secondary" icon={Download} onClick={handleDescargarQr} className="w-full mb-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl">
+              <Button variant="secondary" icon={Download} onClick={handleDescargarQr} className="w-full mb-3text text-gray-700">
                 Descargar mi código QR
               </Button>
             </>
@@ -119,7 +119,7 @@ export default function ConsultarInscripcion() {
               <p className="text-slate-600">
                 Posición actual: <span className="font-bold text-xl text-slate-900 ml-1">#{resultado.posicion}</span>
               </p>
-              <p className="text-sm text-slate-500 mt-4 mb-6">Te notificaremos inmediatamente a tu correo si se libera un cupo.</p>
+              <p className="text-sm text-slate-500 mt-4 mb-6">Sigue pendiente en esta sección para ver si ya fuiste promovido</p>
             </>
           )}
         </div>

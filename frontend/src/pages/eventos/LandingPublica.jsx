@@ -11,7 +11,7 @@ export default function LandingPublica() {
   const [eventos, setEventos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filtroFecha, setFiltroFecha] = useState('Todo'); // 'Todo', 'Hoy', 'Este fin de semana'
+  const [filtroFecha, setFiltroFecha] = useState('Todo'); // 'Todo', 'Hoy', 'fin de semana'
   const [limiteActivos, setLimiteActivos] = useState(6);
 
   useEffect(() => {
@@ -142,7 +142,7 @@ export default function LandingPublica() {
           <h2 className="text-3xl font-bold tracking-tight text-slate-900">Próximos Eventos</h2>
           
           <div className="flex items-center gap-2 p-1 bg-slate-200/50 rounded-full w-max">
-            {['Todo', 'Hoy', 'Este fin de semana'].map(filtro => (
+            {['Todo', 'Hoy', 'Fin de semana'].map(filtro => (
               <button
                 key={filtro}
                 onClick={() => setFiltroFecha(filtro)}

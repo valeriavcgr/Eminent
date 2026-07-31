@@ -42,7 +42,7 @@ export default function HistorialPersona() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Historial por persona</h1>
-        <p className="text-sm text-slate-500 mt-1">Consulta el recorrido completo de un participante en la plataforma.</p>
+        <p className="text-sm text-slate-500 mt-1">Consulta el recorrido completo de un invitado en la plataforma</p>
       </div>
 
       <Card>

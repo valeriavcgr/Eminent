@@ -81,7 +81,6 @@ export default function ListaAsistencia() {
             />
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">Control de Asistencia</h1>
           </div>
-          <p className="text-sm text-slate-500 mt-1">Evento #{id}</p>
         </div>
         
         {isMonitor && (
