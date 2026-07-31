@@ -16,6 +16,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Controlador REST para consultar la ficha histórica de participantes.
+ * Permite buscar inscripciones y asistencias pasadas de un participante
+ * filtrando por documento, correo o nombre. Solo accesible para ADMIN y OPERADOR.
+ */
 @RestController
 @RequestMapping("/api/participantes")
 public class HistorialController {
@@ -23,6 +28,11 @@ public class HistorialController {
     @Autowired private ParticipacionService participacionService;
     @Autowired private UsuarioRepository usuarioRepository;
 
+    /**
+     * Consulta la ficha histórica de un participante con sus inscripciones y asistencias.
+     * Los filtros (documento, correo, nombre) son opcionales y se combinan con AND.
+     * Solo accesible para ADMIN y OPERADOR.
+     */
     @GetMapping("/historial")
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
     public ResponseEntity<List<FichaHistorialDTO>> historial(
@@ -32,6 +42,7 @@ public class HistorialController {
         return ResponseEntity.ok(participacionService.historial(documento, correo, nombre));
     }
 
+    /** Obtiene el usuario actualmente autenticado desde el contexto de seguridad. */
     private Usuario usuarioActual() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return usuarioRepository.findByCorreo(auth.getName())

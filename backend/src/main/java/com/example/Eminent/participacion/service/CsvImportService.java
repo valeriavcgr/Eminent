@@ -21,6 +21,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+/**
+ * Servicio para la importación masiva de participantes mediante archivos CSV.
+ * Proporciona dos operaciones principales: previsualización (valida sin persistir)
+ * y confirmación (persiste los datos válidos en la base de datos).
+ * Aplica validaciones de formato para documento, correo y campos requeridos.
+ */
 @Service
 public class CsvImportService {
 
@@ -157,9 +163,15 @@ public class CsvImportService {
     }
 
     private void validarFila(FilaCsvDTO fila) {
-        if (fila.getNombre().isBlank() || fila.getApellido().isBlank() || fila.getDocumento().isBlank()) {
+        if (fila.getNombre().isBlank() || fila.getApellido().isBlank()) {
             fila.setValida(false);
-            fila.setMotivoError("Nombre, apellido y documento son obligatorios");
+            fila.setMotivoError("Nombre y apellido son obligatorios");
+            return;
+        }
+
+        if (fila.getDocumento().isBlank()) {
+            fila.setValida(false);
+            fila.setMotivoError("El documento es obligatorio");
             return;
         }
 

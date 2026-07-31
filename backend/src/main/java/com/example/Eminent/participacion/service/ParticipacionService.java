@@ -16,6 +16,9 @@ import com.example.Eminent.participacion.repository.InscripcionRepository;
 import com.example.Eminent.participacion.repository.ParticipanteRepository;
 import com.example.Eminent.usuarios.entity.Usuario;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.Eminent.participacion.dto.EstadoInscripcionDTO;
@@ -23,7 +26,6 @@ import com.example.Eminent.participacion.dto.EstadoInscripcionDTO;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class ParticipacionService {
@@ -86,6 +88,9 @@ public class ParticipacionService {
     }
 
     public List<InscripcionEsperaDTO> consultarCola(Long eventoId) {
+        Evento evento = eventoRepo.findById(eventoId)
+                .orElseThrow(() -> new IllegalArgumentException("Evento no encontrado"));
+
         List<Inscripcion> cola = inscripcionRepo
                 .findByEventoIdAndEstadoOrderByFechaInscripcionAsc(eventoId, Inscripcion.Estado.EN_ESPERA);
 
@@ -98,6 +103,8 @@ public class ParticipacionService {
             dto.setParticipanteDocumento(i.getParticipante().getDocumento());
             dto.setFechaInscripcion(i.getFechaInscripcion());
             dto.setPosicion(posicion++);
+            dto.setEventoId(eventoId);
+            dto.setEventoNombre(evento.getNombre());
             resultado.add(dto);
         }
         return resultado;
@@ -213,7 +220,7 @@ public class ParticipacionService {
         return resultado;
     }
 
-    public List<Inscripcion> listarInscripcionesPorEvento(Long eventoId) {
-        return inscripcionRepo.findByEventoId(eventoId);
+    public Page<Inscripcion> listarInscripcionesPorEvento(Long eventoId, Pageable pageable) {
+        return inscripcionRepo.findByEventoId(eventoId, pageable);
     }
 }

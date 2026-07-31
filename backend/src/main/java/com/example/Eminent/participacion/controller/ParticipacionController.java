@@ -1,20 +1,17 @@
 package com.example.Eminent.participacion.controller;
 
 import com.example.Eminent.participacion.dto.InscripcionDTO;
-import com.example.Eminent.participacion.dto.InscripcionDTO;
 import com.example.Eminent.participacion.entity.Inscripcion;
-import com.example.Eminent.participacion.entity.Participante;
 import com.example.Eminent.participacion.service.ParticipacionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/inscripciones")
@@ -24,9 +21,9 @@ public class ParticipacionController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
-    public ResponseEntity<?> listarPorEvento(@RequestParam Long eventoId) {
-        List<Inscripcion> lista = service.listarInscripcionesPorEvento(eventoId);
-        return ResponseEntity.ok(lista.stream().map(this::toDTO).collect(Collectors.toList()));
+    public ResponseEntity<Page<InscripcionDTO>> listarPorEvento(@RequestParam Long eventoId, Pageable pageable) {
+        Page<Inscripcion> pagina = service.listarInscripcionesPorEvento(eventoId, pageable);
+        return ResponseEntity.ok(pagina.map(this::toDTO));
     }
 
     private InscripcionDTO toDTO(Inscripcion inscripcion) {
@@ -43,7 +40,7 @@ public class ParticipacionController {
 
     @PostMapping
     public ResponseEntity<?> inscribir(@RequestBody Map<String, Object> body) throws Exception {
-        Participante p = new Participante();
+        com.example.Eminent.participacion.entity.Participante p = new com.example.Eminent.participacion.entity.Participante();
         p.setNombre((String) body.get("nombre"));
         p.setApellido((String) body.get("apellido"));
         p.setDocumento((String) body.get("documento"));
