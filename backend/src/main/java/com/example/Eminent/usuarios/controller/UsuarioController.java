@@ -1,5 +1,10 @@
 package com.example.Eminent.usuarios.controller;
 
+import com.example.Eminent.usuarios.dto.LoginRequest;
+import com.example.Eminent.usuarios.dto.UsuarioDTO;
+import com.example.Eminent.usuarios.entity.Usuario;
+import com.example.Eminent.usuarios.service.UsuarioService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;

@@ -15,6 +15,7 @@ import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import com.example.Eminent.eventos.dto.EventoDTO;
 
@@ -114,7 +115,7 @@ public class CertificacionService {
     }
 
     public List<EventoDTO> eventosFinalizados() {
-        return eventoRepo.findByEstado(Evento.Estado.FINALIZADO).stream()
+        return eventoRepo.findByEstado(Evento.Estado.FINALIZADO, Pageable.unpaged()).getContent().stream()
                 .map(this::toEventoDTO)
                 .toList();
     }

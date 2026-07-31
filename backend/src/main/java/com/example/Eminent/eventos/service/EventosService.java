@@ -101,7 +101,7 @@ public class EventosService {
 
     public Page<Evento> listarPublicos(Pageable pageable) {
         List<Evento> eventos = eventoRepository.findByEstadoIn(
-                List.of(Evento.Estado.PROGRAMADO, Evento.Estado.EN_CURSO));
+                List.of(Evento.Estado.PROGRAMADO, Evento.Estado.EN_CURSO), Pageable.unpaged()).getContent();
         return new org.springframework.data.domain.PageImpl<>(eventos, pageable, eventos.size());
     }
 

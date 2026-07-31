@@ -12,6 +12,7 @@ import com.example.Eminent.participacion.entity.Inscripcion;
 import com.example.Eminent.participacion.repository.InscripcionRepository;
 import com.example.Eminent.usuarios.entity.Usuario;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -35,12 +36,17 @@ public class AsistenciaService {
 
     private static final Pattern PATRON_QR = Pattern.compile("^INSCRIPCION-(\\d+)-.*$");
 
-    public ListadoAsistenciaDTO listarParticipantes(Long eventoId, Long usuarioId) {
+    public ListadoAsistenciaDTO listarParticipantes(Long eventoId, Usuario usuario) {
         Evento evento = eventoRepo.findById(eventoId)
                 .orElseThrow(() -> new IllegalArgumentException("Evento no encontrado"));
 
+        if (usuario.getRol() == Usuario.Rol.MONITOR) {
+            validarMonitorAsignado(eventoId, usuario.getId());
+        }
+
         List<Inscripcion> activas = inscripcionRepo
-                .findByEventoIdAndEstado(eventoId, Inscripcion.Estado.ACTIVA);
+                .findByEventoIdAndEstado(eventoId, Inscripcion.Estado.ACTIVA, Pageable.unpaged())
+                .getContent();
 
         List<ParticipanteAsistenciaDTO> lista = activas.stream().map(i -> {
             ParticipanteAsistenciaDTO dto = new ParticipanteAsistenciaDTO();
@@ -105,6 +111,10 @@ public class AsistenciaService {
 
         if (!inscripcion.getContenidoQr().equals(contenidoQr)) {
             throw new IllegalArgumentException("Código QR no válido");
+        }
+
+        if (!inscripcion.getEvento().getId().equals(eventoId)) {
+            throw new IllegalArgumentException("Este código no corresponde a este evento");
         }
 
         validarMonitorAsignado(eventoId, monitor.getId());

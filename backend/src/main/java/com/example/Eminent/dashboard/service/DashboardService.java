@@ -10,6 +10,7 @@ import com.example.Eminent.participacion.entity.Inscripcion;
 import com.example.Eminent.participacion.repository.InscripcionRepository;
 import com.example.Eminent.usuarios.entity.Usuario;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -35,7 +36,7 @@ public class DashboardService {
         LocalDateTime desde = (fechaDesde != null) ? fechaDesde : LocalDateTime.of(2000, 1, 1, 0, 0);
         LocalDateTime hasta = (fechaHasta != null) ? fechaHasta : LocalDateTime.of(2100, 1, 1, 0, 0);
 
-        List<Evento> eventos = eventoRepository.buscarConFiltros(tipo, modalidad, estado, desde, hasta);
+        List<Evento> eventos = eventoRepository.buscarConFiltros(tipo, modalidad, estado, desde, hasta, Pageable.unpaged()).getContent();
 
         if (usuario.getRol() == Usuario.Rol.OPERADOR) {
             eventos = eventos.stream()

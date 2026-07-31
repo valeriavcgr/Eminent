@@ -80,7 +80,7 @@ public class ParticipacionService {
 
     public long posicionEnCola(Long inscripcionId, Long eventoId) {
         // Se usa en la respuesta al Invitado si quedó EN_ESPERA
-        var enEspera = inscripcionRepo.findByEventoIdAndEstado(eventoId, Inscripcion.Estado.EN_ESPERA);
+        var enEspera = inscripcionRepo.findByEventoIdAndEstado(eventoId, Inscripcion.Estado.EN_ESPERA, Pageable.unpaged()).getContent();
         for (int i = 0; i < enEspera.size(); i++) {
             if (enEspera.get(i).getId().equals(inscripcionId)) return i + 1;
         }
@@ -186,7 +186,7 @@ public class ParticipacionService {
             ficha.setTelefono(p.getTelefono());
             ficha.setFechaCreacion(p.getFechaCreacion());
 
-            List<Inscripcion> inscripciones = inscripcionRepo.findByParticipanteIdOrderByFechaInscripcionDesc(p.getId());
+            List<Inscripcion> inscripciones = inscripcionRepo.findByParticipanteIdOrderByFechaInscripcionDesc(p.getId(), Pageable.unpaged()).getContent();
             List<InscripcionHistorialDTO> items = new ArrayList<>();
             for (Inscripcion ins : inscripciones) {
                 InscripcionHistorialDTO item = new InscripcionHistorialDTO();

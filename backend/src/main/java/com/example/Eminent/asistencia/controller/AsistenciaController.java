@@ -33,7 +33,7 @@ public class AsistenciaController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR') or hasRole('MONITOR')")
     public ResponseEntity<ListadoAsistenciaDTO> listar(@PathVariable Long id) {
         Usuario usuario = usuarioActual();
-        return ResponseEntity.ok(service.listarParticipantes(id, usuario.getId()));
+        return ResponseEntity.ok(service.listarParticipantes(id, usuario));
     }
 
     /**

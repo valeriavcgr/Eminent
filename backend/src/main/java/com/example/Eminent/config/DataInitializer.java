@@ -19,25 +19,34 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        crearUsuarioSiNoExiste("admin@eminent.com", "Admin1234", Usuario.Rol.ADMIN, "3001234567", "Activo");
-        crearUsuarioSiNoExiste("operador@eminent.com", "Operador1", Usuario.Rol.OPERADOR, "3002345678", "Activo");
-        crearUsuarioSiNoExiste("monitor@eminent.com", "Monitor12", Usuario.Rol.MONITOR, "3003456789", "Activo");
+        crearOActualizarUsuarioSeed("admin@eminent.com", "Admin1234", Usuario.Rol.ADMIN, "3001234567");
+        crearOActualizarUsuarioSeed("operador@eminent.com", "Operador1", Usuario.Rol.OPERADOR, "3002345678");
+        crearOActualizarUsuarioSeed("monitor@eminent.com", "Monitor12", Usuario.Rol.MONITOR, "3003456789");
     }
 
-    private void crearUsuarioSiNoExiste(String correo, String contrasena, Usuario.Rol rol, String telefono, String estado) {
-        if (!usuarioRepository.existsByCorreo(correo)) {
-            Usuario usuario = new Usuario();
+    /**
+     * Crea la cuenta seed si no existe, o resincroniza su contraseña si ya existe.
+     * Estas 3 cuentas son credenciales de desarrollo conocidas: sin este resync,
+     * un cambio de contraseña seed en el código no toma efecto sobre datos ya
+     * persistidos en una BD anterior, dejando las credenciales documentadas sin funcionar.
+     */
+    private void crearOActualizarUsuarioSeed(String correo, String contrasena, Usuario.Rol rol, String telefono) {
+        Usuario usuario = usuarioRepository.findByCorreo(correo).orElse(null);
+        if (usuario == null) {
+            usuario = new Usuario();
             usuario.setNombre(rol.name());
             usuario.setApellido("User");
             usuario.setCorreo(correo);
-            usuario.setContrasena(passwordEncoder.encode(contrasena));
             usuario.setRol(rol);
             usuario.setTelefono(telefono);
             usuario.setEstado(Usuario.Estado.ACTIVO);
+            usuario.setContrasena(passwordEncoder.encode(contrasena));
             usuarioRepository.save(usuario);
             System.out.println("[DataInitializer] Usuario creado: " + correo + " (" + rol + ")");
-        } else {
-            System.out.println("[DataInitializer] Usuario ya existe: " + correo);
+        } else if (!passwordEncoder.matches(contrasena, usuario.getContrasena())) {
+            usuario.setContrasena(passwordEncoder.encode(contrasena));
+            usuarioRepository.save(usuario);
+            System.out.println("[DataInitializer] Contraseña resincronizada: " + correo);
         }
     }
 }
