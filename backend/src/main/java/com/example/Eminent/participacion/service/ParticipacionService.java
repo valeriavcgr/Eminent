@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.Eminent.participacion.dto.EstadoInscripcionDTO;
 
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -37,8 +38,14 @@ public class ParticipacionService {
     @Autowired private AuditoriaService auditoriaService;
     @Autowired private AsistenciaRepository asistenciaRepo;
     @Autowired private CertificadoRepository certificadoRepo;
+    private static final java.util.regex.Pattern PATRON_DOCUMENTO = java.util.regex.Pattern.compile("^[0-9]{8,15}$");
+
 
     public Inscripcion inscribir(Participante datosParticipante, Long eventoId) throws Exception {
+        if (datosParticipante.getDocumento() == null || !PATRON_DOCUMENTO.matcher(datosParticipante.getDocumento()).matches()) {
+            throw new IllegalArgumentException("El documento debe ser numérico, mínimo 8 dígitos");
+        }
+
         Evento evento = eventoRepo.findById(eventoId)
                 .orElseThrow(() -> new IllegalArgumentException("Evento no encontrado"));
 

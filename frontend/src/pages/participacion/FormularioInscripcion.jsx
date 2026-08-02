@@ -121,7 +121,10 @@ export default function FormularioInscripcion() {
         <div className="relative">
           <IdCard className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
-            name="documento" placeholder="Número de documento" value={form.documento} onChange={handleChange}
+            name="documento" placeholder="Número de documento (mín. 8 dígitos)" value={form.documento}
+            onChange={(e) => setForm({ ...form, documento: e.target.value.replace(/\D/g, '') })}
+            pattern="[0-9]{8,15}" minLength={8} inputMode="numeric"
+            title="El documento debe ser numérico, mínimo 8 dígitos"
             className="w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 text-sm bg-slate-50 font-medium"
             required
           />

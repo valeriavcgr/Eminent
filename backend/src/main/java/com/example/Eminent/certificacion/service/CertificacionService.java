@@ -27,12 +27,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Servicio para la generación y gestión de certificados de asistencia.
- * Se encarga de emitir certificados PDF con códigos QR de verificación
- * al finalizar un evento, y de proporcionar consultas para verificar
- * la autenticidad de certificados por código o descargar el PDF.
- */
 @Service
 public class CertificacionService {
 
@@ -42,8 +36,13 @@ public class CertificacionService {
     @Autowired private ParticipanteRepository participanteRepo;
     @Autowired private PdfService pdfService;
     @Autowired private AuditoriaService auditoriaService;
-
     private static final String CARPETA_QR_CERT = "qr-certificados";
+
+    private String formatearDuracion(long dias) {
+        if (dias == 7) return "1 semana";
+        if (dias == 1) return "1 día";
+        return dias + " días";
+    }
 
     public void generarCertificadosDeEvento(Evento evento) throws Exception {
         List<Asistencia> asistencias = asistenciaRepo.findByInscripcion_Evento_Id(evento.getId());
@@ -54,9 +53,9 @@ public class CertificacionService {
 
             String codigoUnico = "CERT-" + evento.getId() + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
-            BigDecimal duracionHoras = BigDecimal.valueOf(
-                    Duration.between(evento.getFechaInicio(), evento.getFechaFin()).toMinutes() / 60.0
-            );
+            long horasTotales = Duration.between(evento.getFechaInicio(), evento.getFechaFin()).toHours();
+            long dias = Math.max(1, (long) Math.ceil(horasTotales / 24.0));
+            BigDecimal duracionDias = BigDecimal.valueOf(dias);
 
             String rutaQr = generarQrVerificacion(codigoUnico);
 
@@ -66,12 +65,12 @@ public class CertificacionService {
                     .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 
             String rutaPdf = pdfService.generarPdf(nombreCompleto, evento.getNombre(),
-                    duracionHoras.toString(), fechaEmisionTexto, codigoUnico, rutaQr);
+                    formatearDuracion(dias), fechaEmisionTexto, codigoUnico, rutaQr);
 
             Certificado certificado = new Certificado();
             certificado.setAsistencia(asistencia);
             certificado.setCodigoUnico(codigoUnico);
-            certificado.setDuracionHoras(duracionHoras);
+            certificado.setDuracionHoras(duracionDias);
             certificado.setRutaPdf(rutaPdf);
             certificado.setCodigoQrVerificacion(rutaQr);
             certificadoRepo.save(certificado);

@@ -6,6 +6,8 @@ import { ShieldCheck, ShieldX, Search, ArrowLeft, User, Calendar, Clock, Hash } 
 import AuthLayout from '../../components/AuthLayout';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Html5QrcodeScanner } from 'html5-qrcode';
+import { formatearDuracion } from '../../utils/formatearDuracion';
 
 export default function VerificarCertificado() {
   const [searchParams] = useSearchParams();

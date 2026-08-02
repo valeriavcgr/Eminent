@@ -142,7 +142,7 @@ export default function ListarEvento() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Gestión de Eventos</h1>
-          <p className="text-sm text-slate-500 mt-1">Crea y administra talleres, capacitaciones y torneos.</p>
+          <p className="text-sm text-slate-500 mt-1">Crea y administra talleres, capacitaciones y torneos</p>
         </div>
         <Button onClick={() => navigate('/eventos/nuevo')} icon={Plus} className="bg-emerald-600 hover:bg-emerald-700 text-white">
           Nuevo Evento

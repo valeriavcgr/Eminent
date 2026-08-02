@@ -81,7 +81,7 @@ export default function FormularioUsuario() {
                 {isEditing ? 'Editar Usuario' : 'Nuevo Usuario'}
               </h1>
               <p className="text-blue-100 text-sm mt-1">
-                {isEditing ? 'Actualiza los datos del usuario.' : 'Registra un nuevo usuario en el sistema.'}
+                {isEditing ? 'Actualiza los datos del usuario' : 'Registra un nuevo usuario en el sistema.'}
               </p>
             </div>
           </div>

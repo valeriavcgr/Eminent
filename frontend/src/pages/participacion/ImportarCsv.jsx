@@ -146,7 +146,11 @@ export default function ImportarCsv() {
           <CardContent className="p-6 flex items-center gap-6">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span className="font-semibold text-slate-800">{resumen.exitosas} exitosas</span>
+              <span className="font-semibold text-slate-800">{resumen.exitosas} activas</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock3 className="w-5 h-5 text-orange-500" />
+              <span className="font-semibold text-slate-800">{resumen.enEspera} en espera</span>
             </div>
             <div className="flex items-center gap-2">
               <XCircle className="w-5 h-5 text-red-500" />
@@ -190,10 +194,12 @@ export default function ImportarCsv() {
                       <td className="px-6 py-3 text-slate-600">{f.correo || '-'}</td>
                       <td className="px-6 py-3 text-slate-600">{f.telefono || '-'}</td>
                       <td className="px-6 py-3">
-                        {f.valida ? (
-                          <span className="flex items-center gap-1 text-emerald-600"><CheckCircle2 className="w-4 h-4" /> Válida</span>
-                        ) : (
+                        {!f.valida ? (
                           <span className="flex items-center gap-1 text-red-500"><XCircle className="w-4 h-4" /> Error</span>
+                        ) : f.iraListaEspera ? (
+                          <span className="flex items-center gap-1 text-orange-500"><Clock3 className="w-4 h-4" /> Lista de espera</span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-emerald-600"><CheckCircle2 className="w-4 h-4" /> Válida</span>
                         )}
                       </td>
                       <td className="px-6 py-3 text-slate-500">{f.motivoError || '-'}</td>

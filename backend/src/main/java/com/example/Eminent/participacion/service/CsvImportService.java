@@ -21,12 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-/**
- * Servicio para la importación masiva de participantes mediante archivos CSV.
- * Proporciona dos operaciones principales: previsualización (valida sin persistir)
- * y confirmación (persiste los datos válidos en la base de datos).
- * Aplica validaciones de formato para documento, correo y campos requeridos.
- */
 @Service
 public class CsvImportService {
 
@@ -36,7 +30,7 @@ public class CsvImportService {
     @Autowired private QrService qrService;
     @Autowired private AuditoriaService auditoriaService;
 
-    private static final Pattern PATRON_DOCUMENTO = Pattern.compile("^[0-9]{4,15}$");
+    private static final Pattern PATRON_DOCUMENTO = Pattern.compile("^[0-9]{8,15}$");
     private static final Pattern PATRON_CORREO = Pattern.compile("^[\\w.+-]+@[\\w-]+\\.[a-zA-Z]{2,}$");
 
     public List<FilaCsvDTO> previsualizar(MultipartFile archivo, Long eventoId) throws Exception {
@@ -58,8 +52,7 @@ public class CsvImportService {
 
             if (fila.isValida()) {
                 if (cupoRestante <= 0) {
-                    fila.setValida(false);
-                    fila.setMotivoError("No cabe en el cupo disponible");
+                    fila.setIraListaEspera(true);
                 } else {
                     cupoRestante--;
                 }
@@ -76,6 +69,7 @@ public class CsvImportService {
 
         List<FilaCsvDTO> filas = leerArchivo(archivo);
         int exitosas = 0;
+        int enEspera = 0;
         int fallidas = 0;
 
         for (FilaCsvDTO fila : filas) {
@@ -86,12 +80,6 @@ public class CsvImportService {
             }
 
             if (yaEstaInscrito(fila.getDocumento(), eventoId)) {
-                fallidas++;
-                continue;
-            }
-
-            long activos = inscripcionRepo.countByEventoIdAndEstado(eventoId, Inscripcion.Estado.ACTIVA);
-            if (activos >= evento.getAforo()) {
                 fallidas++;
                 continue;
             }
@@ -107,26 +95,32 @@ public class CsvImportService {
                         return participanteRepo.save(p);
                     });
 
+            long activos = inscripcionRepo.countByEventoIdAndEstado(eventoId, Inscripcion.Estado.ACTIVA);
+            boolean hayCupo = activos < evento.getAforo();
+
             Inscripcion inscripcion = new Inscripcion();
             inscripcion.setParticipante(participante);
             inscripcion.setEvento(evento);
             inscripcion.setMetodoInscripcion(Inscripcion.MetodoInscripcion.CSV);
-            inscripcion.setEstado(Inscripcion.Estado.ACTIVA);
+            inscripcion.setEstado(hayCupo ? Inscripcion.Estado.ACTIVA : Inscripcion.Estado.EN_ESPERA);
             Inscripcion guardada = inscripcionRepo.save(inscripcion);
 
-            String[] qr = qrService.generarQr(guardada.getId());
-            guardada.setCodigoQr(qr[0]);
-            guardada.setContenidoQr(qr[1]);
-            inscripcionRepo.save(guardada);
-
-            exitosas++;
+            if (hayCupo) {
+                String[] qr = qrService.generarQr(guardada.getId());
+                guardada.setCodigoQr(qr[0]);
+                guardada.setContenidoQr(qr[1]);
+                inscripcionRepo.save(guardada);
+                exitosas++;
+            } else {
+                enEspera++;
+            }
         }
 
         auditoriaService.registrar(ejecutor, Auditoria.Accion.CREAR, Auditoria.TipoAfectado.INSCRIPCION,
                 eventoId, "Importación masiva CSV al evento " + evento.getNombre()
-                        + ": " + exitosas + " exitosas, " + fallidas + " fallidas", null);
+                        + ": " + exitosas + " activas, " + enEspera + " en espera, " + fallidas + " fallidas", null);
 
-        return Map.of("exitosas", exitosas, "fallidas", fallidas);
+        return Map.of("exitosas", exitosas, "enEspera", enEspera, "fallidas", fallidas);
     }
 
     private boolean yaEstaInscrito(String documento, Long eventoId) {
@@ -146,7 +140,7 @@ public class CsvImportService {
         try (CSVReader reader = new CSVReader(new InputStreamReader(archivo.getInputStream()))) {
             String[] linea;
             int numeroFila = 0;
-            reader.readNext(); // saltar encabezado
+            reader.readNext();
             while ((linea = reader.readNext()) != null) {
                 numeroFila++;
                 FilaCsvDTO fila = new FilaCsvDTO();
@@ -177,7 +171,7 @@ public class CsvImportService {
 
         if (!PATRON_DOCUMENTO.matcher(fila.getDocumento()).matches()) {
             fila.setValida(false);
-            fila.setMotivoError("El documento debe ser numérico (4 a 15 dígitos)");
+            fila.setMotivoError("El documento debe ser numérico, mínimo 8 dígitos");
             return;
         }
 

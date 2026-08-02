@@ -20,6 +20,7 @@ import RecibirCertificado from './pages/certificacion/RecibirCertificado';
 import VerificarCertificado from './pages/certificacion/VerificarCertificado';
 import ConsultarInscripcion from './pages/participacion/ConsultarInscripcion';
 import Dashboard from './pages/dashboard/Dashboard';
+import VerificarCertificadoInterno from './pages/certificacion/VerificarCertificadoInterno';
 
 import { Toaster } from 'sonner';
 
@@ -52,6 +53,8 @@ function App() {
             <Route path="/eventos/:id/escaner" element={<EscanerQr />} />
 
             <Route path="/participacion/historial" element={<HistorialPersona />} />
+
+            <Route path="/certificados/verificar-interno" element={<VerificarCertificadoInterno />} />
 
             <Route path="/dashboard" element={<Dashboard />} />
 

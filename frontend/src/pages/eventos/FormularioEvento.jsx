@@ -123,7 +123,7 @@ export default function FormularioEvento() {
               </h1>
               <p className="text-blue-100 text-sm mt-1">
                 {esEdicion
-                  ? 'Modifica los detalles del evento programado.'
+                  ? 'Modifica los detalles del evento programado'
                   : 'Completa los datos para programar un nuevo evento.'}
               </p>
             </div>

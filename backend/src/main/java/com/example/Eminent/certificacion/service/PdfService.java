@@ -18,12 +18,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/**
- * Servicio para la generación de certificados en formato PDF.
- * Crea un documento PDF con el nombre del participante, evento,
- * duración, fecha de emisión, código de verificación y código QR
- * de autenticidad. Los archivos se almacenan en la carpeta certificados-pdf.
- */
 @Service
 public class PdfService {
 
@@ -63,7 +57,7 @@ public class PdfService {
 
             document.add(new Paragraph("Curso: " + nombreEvento)
                     .setFont(fuenteNormal).setFontSize(14).setTextAlignment(TextAlignment.CENTER));
-            document.add(new Paragraph("Duración: " + duracion + " horas")
+            document.add(new Paragraph("Duración: " + duracion)
                     .setFont(fuenteNormal).setFontSize(14).setTextAlignment(TextAlignment.CENTER));
             document.add(new Paragraph("Fecha de emisión: " + fechaEmision)
                     .setFont(fuenteNormal).setFontSize(14).setTextAlignment(TextAlignment.CENTER));
