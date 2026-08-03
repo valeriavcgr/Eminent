@@ -19,22 +19,28 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
 
+### Maven / Spring Boot ###
+backend/target/
+
+### IDE ###
+.idea/
+*.iml
+.vscode/
+!.vscode/extensions.json
+
 ### npm / Vite ###
 node_modules/
-.DS_Store
-dist/
-
-###carpetas ###
-qr-inscripciones/
+frontend/dist/
 .vite/
+.DS_Store
+
+### Carpetas generadas automáticamente al correr el backend ###
+backend/qr-inscripciones/
+backend/qr-certificados/
+backend/certificados-pdf/
 
 ### Playwright / capturas ###
 .playwright-mcp/
-*.png
-
-### Backend (se gestiona en la rama Backend, no en Frontend) ###
-backend/
