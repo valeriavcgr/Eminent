@@ -11,7 +11,7 @@ QR y generación automática de certificados verificables.
  
 1. **Gestión de eventos** — talleres, capacitaciones y torneos, presenciales
    o virtuales, con control de aforo y cambio de estado automático
-   (`PROGRAMADO` → `EN_CURSO` → `FINALIZADO`).
+   (programado → en curso →  finalizado).
 2. **Gestión avanzada de participantes**
    - Registro público (individual o masivo por CSV, con previsualización y
      manejo de lista de espera cuando se agota el cupo).
@@ -65,9 +65,6 @@ QR y generación automática de certificados verificables.
  
 Crea una base de datos vacía llamada `Eminent`:
  
-```bash
-psql -h 127.0.0.1 -U postgres -c "CREATE DATABASE \"Eminent\";"
-```
  
 Ejecuta el script SQL de creación de tablas (ubicado en `Documentación/`)
 contra esa base de datos.
