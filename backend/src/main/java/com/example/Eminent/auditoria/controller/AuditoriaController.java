@@ -13,22 +13,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 
-/**
- * Controlador REST para la gestión de registros de auditoría.
- * Proporciona un endpoint de consulta avanzada con filtros por usuario,
- * tipo de entidad afectada y rango de fechas. Solo accesible por ADMIN.
- */
 @RestController
 @RequestMapping("/api/auditoria")
 public class AuditoriaController {
 
     @Autowired private AuditoriaService service;
-
-    /**
-     * Consulta registros de auditoría con filtros opcionales por usuario, tipo de entidad
-     * afectada y rango de fechas. Los resultados se devuelven paginados.
-     * Solo accesible para ADMIN.
-     */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<AuditoriaDTO>> consultar(

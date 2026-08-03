@@ -7,12 +7,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import com.example.Eminent.eventos.entity.Evento;
 
-/**
- * Entidad que representa la inscripción de un participante en un evento.
- * Una inscripción puede tener estado ACTIVA (confirmada) o EN_ESPERA (lista de espera
- * si el aforo está lleno). También almacena el método de inscripción (formulario o CSV)
- * y los códigos QR asociados para la asistencia.
- */
+
 @Entity
 @Table(name = "inscripcion")
 @Getter

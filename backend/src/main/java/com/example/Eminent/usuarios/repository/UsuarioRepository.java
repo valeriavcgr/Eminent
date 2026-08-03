@@ -7,11 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-/**
- * Repositorio JPA para la entidad {@link Usuario}.
- * Proporciona operaciones CRUD estándar más consultas personalizadas
- * para búsqueda por correo, verificación de unicidad y paginación por rol.
- */
+
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     /** Busca un usuario por su correo electrónico. */

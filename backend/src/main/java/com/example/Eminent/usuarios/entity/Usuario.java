@@ -6,11 +6,7 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
-/**
- * Entidad que representa un usuario del sistema Eminent.
- * Cada usuario tiene un rol (ADMIN, OPERADOR o MONITOR) y un estado (ACTIVO o INACTIVO).
- * La autenticación se realiza mediante correo y contraseña encriptada.
- */
+
 @Entity
 @Table(name = "usuario")
 @Getter

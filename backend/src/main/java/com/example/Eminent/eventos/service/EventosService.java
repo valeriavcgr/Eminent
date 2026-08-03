@@ -19,12 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Servicio de negocio para la gestión de eventos.
- * Maneja la creación, consulta, edición y cancelación de eventos,
- * así como la asignación de monitores. Integra auditoría para registrar
- * todas las acciones relevantes realizadas sobre eventos.
- */
+
 @Service
 public class EventosService {
 

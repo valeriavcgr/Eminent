@@ -2,11 +2,6 @@ package com.example.Eminent.asistencia.dto;
 
 import lombok.Getter;
 import lombok.Setter;
-
-/**
- * DTO que contiene el resumen de asistencia de un evento.
- * Muestra el total de inscritos, cuántos asistieron y el porcentaje de ocupación del aforo.
- */
 @Getter
 @Setter
 public class ResumenAsistenciaDTO {

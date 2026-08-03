@@ -4,11 +4,6 @@ import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
 
-/**
- * DTO que representa el estado de asistencia de un participante individual.
- * Incluye los datos personales del participante y su estado de asistencia
- * al evento, con el método y fecha de registro si aplica.
- */
 @Getter
 @Setter
 public class ParticipanteAsistenciaDTO {

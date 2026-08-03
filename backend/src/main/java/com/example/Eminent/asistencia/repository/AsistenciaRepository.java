@@ -6,11 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Repositorio JPA para la entidad {@link Asistencia}.
- * Proporciona operaciones CRUD estándar más consultas para localizar registros
- * de asistencia por inscripción, evento o participante.
- */
 public interface AsistenciaRepository extends JpaRepository<Asistencia, Long> {
 
     /** Busca un registro de asistencia por el ID de su inscripción vinculada. */

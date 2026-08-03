@@ -155,7 +155,7 @@ public class UsuarioService {
     }
 
     /**
-     * Cambia el estado (ACTIVO/INACTIVO) de un usuario.
+     * Cambia el estado  de un usuario.
      */
     public Usuario cambiarEstado(Long id, String nuevoEstado) {
         Usuario usuario = repo.findById(id)

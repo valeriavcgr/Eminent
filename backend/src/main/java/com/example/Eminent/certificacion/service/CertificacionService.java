@@ -41,10 +41,7 @@ public class CertificacionService {
     @Autowired private AuditoriaService auditoriaService;
     private static final String CARPETA_QR_CERT = "qr-certificados";
 
-    /**
-     * Da formato a las fechas de un evento: "2 de marzo de 2026" si es un solo día,
-     * o "del 2 al 5 de marzo de 2026" si dura varios días.
-     */
+
     public static String formatearFechasEvento(LocalDateTime inicio, LocalDateTime fin) {
         Locale es = new Locale("es", "ES");
         DateTimeFormatter fmtCompleto = DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy", es);

@@ -22,13 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * Controlador REST para la gestión de eventos del sistema Eminent.
- * Proporciona endpoints para crear, listar (con filtros y paginación),
- * actualizar, cancelar eventos y asignar monitores.
- * ADMIN y OPERADOR pueden gestionar todos los eventos;
- * MONITOR solo puede ver sus eventos asignados.
- */
+
 @RestController
 @RequestMapping("/api/eventos")
 public class EventosController {
@@ -73,10 +67,6 @@ public class EventosController {
         return ResponseEntity.ok(toDTO(creado));
     }
 
-    /**
-     * Lista eventos con filtros opcionales por tipo, modalidad, estado y rango de fechas,
-     * con soporte de paginación. Solo accesible para ADMIN y OPERADOR.
-     */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
     public ResponseEntity<Page<EventoDTO>> listarParaAdminOperador(
@@ -102,18 +92,14 @@ public class EventosController {
         return ResponseEntity.ok(pagina.map(this::toDTO));
     }
 
-    /**
-     * Lista eventos públicos (PROGRAMADO o EN_CURSO) sin necesidad de autenticación, con paginación.
-     */
+
     @GetMapping("/publicos")
     public ResponseEntity<Page<EventoDTO>> listarPublicos(Pageable pageable) {
         Page<Evento> pagina = eventosService.listarPublicos(pageable);
         return ResponseEntity.ok(pagina.map(this::toDTO));
     }
 
-    /**
-     * Edita un evento existente. Solo accesible para ADMIN y OPERADOR.
-     */
+
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
     public ResponseEntity<?> editar(@PathVariable Long id, @RequestBody EventoDTO dto) {
@@ -122,9 +108,6 @@ public class EventosController {
         return ResponseEntity.ok(toDTO(actualizado));
     }
 
-    /**
-     * Asigna un monitor a un evento. Solo accesible para ADMIN y OPERADOR.
-     */
     @PostMapping("/{id}/monitores")
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
     public ResponseEntity<?> asignarMonitor(@PathVariable Long id, @RequestParam Long monitorId) {
@@ -138,10 +121,7 @@ public class EventosController {
         ));
     }
 
-    /**
-     * Cancela un evento (cambia su estado a CANCELADO).
-     * Solo accesible para ADMIN y OPERADOR. No permite cancelar eventos con inscritos.
-     */
+
     @PatchMapping("/{id}/cancelar")
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
     public ResponseEntity<?> cancelar(@PathVariable Long id) {
@@ -150,7 +130,6 @@ public class EventosController {
         return ResponseEntity.ok(toDTO(cancelado));
     }
 
-    /** Obtiene el usuario actualmente autenticado desde el contexto de seguridad. */
     private Usuario obtenerUsuarioActual() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String correo = authentication.getName();
@@ -158,7 +137,6 @@ public class EventosController {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + correo));
     }
 
-    /** Convierte una entidad Evento a su DTO correspondiente para la respuesta API. */
     private EventoDTO toDTO(Evento evento) {
         EventoDTO dto = new EventoDTO();
         dto.setId(evento.getId());

@@ -4,10 +4,6 @@ import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
 
-/**
- * DTO para transferir datos de un registro de asistencia entre capas.
- * Representa el acta de presencia de un participante en un evento.
- */
 @Getter
 @Setter
 public class AsistenciaDTO {

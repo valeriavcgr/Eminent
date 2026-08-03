@@ -7,11 +7,6 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import com.example.Eminent.usuarios.entity.Usuario;
 
-/**
- * Entidad de auditoría que registra todas las acciones relevantes realizadas en el sistema.
- * Cada registro captura quién realizó la acción (usuario o sistema), qué acción se realizó,
- * qué tipo de entidad se vio afectada, y la descripción del cambio.
- */
 @Entity
 @Table(name = "auditoria")
 @Getter

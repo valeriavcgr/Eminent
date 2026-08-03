@@ -16,12 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * Controlador REST para la gestión de usuarios del sistema Eminent.
- * Expone endpoints para autenticación, creación, consulta, listado paginado,
- * actualización y eliminación de usuarios. Los endpoints de modificación
- * están restringidos a ADMIN.
- */
+
 @RestController
 @RequestMapping("/api")
 public class UsuarioController {
@@ -89,7 +84,7 @@ public class UsuarioController {
     }
 
     /**
-     * Cambia el estado (ACTIVO/INACTIVO) de un usuario. Solo accesible por ADMIN.
+     * Cambia el estado de un usuario. Solo accesible por ADMIN.
      */
     @PatchMapping("/usuarios/{id}/estado")
     @PreAuthorize("hasRole('ADMIN')")
@@ -97,7 +92,7 @@ public class UsuarioController {
         return ResponseEntity.ok(toDTO(service.cambiarEstado(id, body.get("estado"))));
     }
 
-    /** Convierte una entidad Usuario a su DTO correspondiente para la respuesta API. */
+    /** Convierte una entidad Usuario a su dto correspondiente para la respuesta API. */
     private UsuarioDTO toDTO(Usuario u) {
         UsuarioDTO dto = new UsuarioDTO();
         dto.setId(u.getId());

@@ -20,11 +20,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-/**
- * Configuración de seguridad de la aplicación Eminent.
- * Define la cadena de filtros de seguridad, CORS, codificación de contraseñas
- * y rules de autorización por endpoint. Utiliza JWT para autenticación stateless.
- */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -63,12 +58,6 @@ public class SecurityConfig {
         return source;
     }
 
-    /**
-     * Cadena de filtros de seguridad principal. Deshabilita CSRF (API stateless),
-     * configura CORS, establece política de sesión sin estado y define qué endpoints
-     * son públicos vs requieren autenticación. Inyecta el filtro JWT antes del filtro
-     * de autenticación por nombre de usuario.
-     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())

@@ -13,11 +13,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Repositorio JPA para la entidad {@link Evento}.
- * Proporciona operaciones CRUD estándar más consultas personalizadas
- * para filtrado por tipo, modalidad, estado, rango de fechas y paginación.
- */
 public interface EventoRepository extends JpaRepository<Evento, Long> {
 
     /** Busca un evento creado por el usuario con el ID proporcionado. */
@@ -39,9 +34,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     List<Evento> findByEstadoAndFechaFinLessThanEqual(Estado estado, LocalDateTime fecha);
 
     /**
-     * Búsqueda avanzada de eventos con filtros opcionales por tipo, modalidad, estado
-     * y rango de fechas. Los parámetros con valor null se ignoran en el filtro.
-     * Los resultados se ordenan por fecha de inicio descendente.
+     * Búsqueda avanzada de eventos con filtros opcionales
      */
     @Query("SELECT e FROM Evento e WHERE " +
             "(:tipo IS NULL OR e.tipo = :tipo) AND " +

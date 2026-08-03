@@ -7,12 +7,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import com.example.Eminent.usuarios.entity.Usuario;
 
-/**
- * Entidad que representa un evento en el sistema Eminent.
- * Cada evento tiene nombre, tipo, modalidad, fechas, aforo y estado.
- * Está vinculado al usuario que lo creó y se asegura que no haya dos eventos
- * con el mismo nombre y tipo simultáneamente.
- */
+
 @Entity
 @Table(name = "evento",
         uniqueConstraints = @UniqueConstraint(columnNames = {"nombre", "tipo"}))
@@ -65,8 +60,6 @@ public class Evento {
     @Column(nullable = false)
     private Integer aforo;
 
-    /** Estados posibles del evento: PROGRAMADO (pendiente), EN_CURSO (en desarrollo),
-     *  FINALIZADO (concluido), CANCELADO (no se realizará). Por defecto es PROGRAMADO. */
     public enum Estado {
         PROGRAMADO, EN_CURSO, FINALIZADO, CANCELADO
     }
@@ -76,7 +69,7 @@ public class Evento {
     @Column(nullable = false)
     private Estado estado = Estado.PROGRAMADO;
 
-    /** Usuario que creó el evento. No puede ser nulo. Se resuelve con fetch LAZY. */
+    /** Usuario que creó el evento. No puede ser nulo. Se resuelve con fetch LAZY.  RECORDAR */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creado_por", nullable = false)
     private Usuario creadoPor;

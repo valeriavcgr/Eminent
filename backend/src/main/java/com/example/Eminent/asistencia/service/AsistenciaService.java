@@ -19,12 +19,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Servicio para el registro de asistencia de participantes a eventos.
- * Permite listar participantes de un evento y registrar asistencia
- * tanto de forma manual (por ID de inscripción) como mediante escaneo
- * de códigos QR generados al momento de la inscripción.
- */
 @Service
 public class AsistenciaService {
 

@@ -167,7 +167,7 @@ public class DataInitializer implements CommandLineRunner {
             contadorDocumento = sembrarParticipantesDelEvento(evento, contadorDocumento, false, monitorAsignado);
         }
 
-        System.out.println("[DataInitializer] Semilla masiva completada: 9 usuarios, 12 eventos, 120 participantes.");
+        System.out.println("Semilla masiva completada: 9 usuarios, 12 eventos, 120 participantes.");
     }
 
     private Evento crearEvento(String nombre, Evento.Tipo tipo, Evento.Modalidad modalidad,
