@@ -65,10 +65,6 @@ QR y generación automática de certificados verificables.
  
 Crea una base de datos vacía llamada `Eminent`:
  
- 
-Ejecuta el script SQL de creación de tablas (ubicado en `Documentación/`)
-contra esa base de datos.
- 
 Configura las credenciales de conexión en
 `backend/src/main/resources/application.properties`
 (`spring.datasource.username` / `spring.datasource.password`).
