@@ -1,9 +1,10 @@
 package com.example.Eminent.dashboard.service;
 
+import com.example.Eminent.asistencia.entity.Asistencia;
 import com.example.Eminent.asistencia.repository.AsistenciaRepository;
 import com.example.Eminent.dashboard.dto.DashboardDTO;
+import com.example.Eminent.dashboard.dto.EventoResumenDashboardDTO;
 import com.example.Eminent.eventos.entity.Evento;
-import com.example.Eminent.eventos.entity.EventoMonitor;
 import com.example.Eminent.eventos.repository.EventoMonitorRepository;
 import com.example.Eminent.eventos.repository.EventoRepository;
 import com.example.Eminent.participacion.entity.Inscripcion;
@@ -14,14 +15,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Servicio para obtener datos resumidos del dashboard principal.
- * Consulta estadísticas de eventos, inscripciones y asistencias
- * aplicando filtros según el rol del usuario (Operador ve solo sus eventos).
- */
 @Service
 public class DashboardService {
 
@@ -66,14 +64,31 @@ public class DashboardService {
         long asistieronTotal = 0;
         long asistieronQrTotal = 0;
         long asistieronManualTotal = 0;
+        List<EventoResumenDashboardDTO> detalle = new ArrayList<>();
 
         for (Evento evento : eventos) {
+            long inscritosEvento = inscripcionRepository.countByEventoIdAndEstado(evento.getId(), Inscripcion.Estado.ACTIVA);
+            long asistieronEvento = asistenciaRepository.countByInscripcion_Evento_Id(evento.getId());
+
             aforoTotal += evento.getAforo();
-            inscritosActivosTotal += inscripcionRepository.countByEventoIdAndEstado(evento.getId(), Inscripcion.Estado.ACTIVA);
-            asistieronTotal += asistenciaRepository.countByInscripcion_Evento_Id(evento.getId());
-            asistieronQrTotal += asistenciaRepository.countByInscripcion_Evento_IdAndMetodo(evento.getId(), com.example.Eminent.asistencia.entity.Asistencia.Metodo.QR);
-            asistieronManualTotal += asistenciaRepository.countByInscripcion_Evento_IdAndMetodo(evento.getId(), com.example.Eminent.asistencia.entity.Asistencia.Metodo.MANUAL);
+            inscritosActivosTotal += inscritosEvento;
+            asistieronTotal += asistieronEvento;
+            asistieronQrTotal += asistenciaRepository.countByInscripcion_Evento_IdAndMetodo(evento.getId(), Asistencia.Metodo.QR);
+            asistieronManualTotal += asistenciaRepository.countByInscripcion_Evento_IdAndMetodo(evento.getId(), Asistencia.Metodo.MANUAL);
+
+            EventoResumenDashboardDTO resumen = new EventoResumenDashboardDTO();
+            resumen.setId(evento.getId());
+            resumen.setNombre(evento.getNombre());
+            resumen.setTipo(evento.getTipo().name());
+            resumen.setModalidad(evento.getModalidad().name());
+            resumen.setAforo(evento.getAforo());
+            resumen.setInscritos(inscritosEvento);
+            resumen.setAsistieron(asistieronEvento);
+            resumen.setPorcentajeAsistencia(inscritosEvento > 0 ? (asistieronEvento * 100.0 / inscritosEvento) : 0);
+            detalle.add(resumen);
         }
+
+        detalle.sort(Comparator.comparingDouble(EventoResumenDashboardDTO::getPorcentajeAsistencia).reversed());
 
         dto.setAforoTotal(aforoTotal);
         dto.setInscritosActivosTotal(inscritosActivosTotal);
@@ -82,6 +97,7 @@ public class DashboardService {
         dto.setAsistieronManualTotal(asistieronManualTotal);
         dto.setPorcentajeAforoOcupado(aforoTotal > 0 ? (inscritosActivosTotal * 100.0 / aforoTotal) : 0);
         dto.setPorcentajeAsistenciaSobreInscritos(inscritosActivosTotal > 0 ? (asistieronTotal * 100.0 / inscritosActivosTotal) : 0);
+        dto.setDetalleEventos(detalle);
 
         return dto;
     }

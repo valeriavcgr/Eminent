@@ -6,9 +6,8 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { formatearDuracion } from '../../utils/formatearDuracion';
 import {
-  ShieldCheck, ShieldX, Search, User, Calendar, Clock, Hash, QrCode, X
+  ShieldCheck, ShieldX, Search, User, Calendar, CalendarDays, Clock, Hash, QrCode, X
 } from 'lucide-react';
 
 export default function VerificarCertificadoInterno() {
@@ -128,7 +127,8 @@ export default function VerificarCertificadoInterno() {
               <div className="space-y-2 text-sm text-slate-700">
                 <div className="flex items-center gap-2"><User className="w-4 h-4 text-slate-400" /> {resultado.participanteNombre}</div>
                 <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-slate-400" /> {resultado.eventoNombre}</div>
-                <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-slate-400" /> {formatearDuracion(resultado.duracionHoras)}</div>
+                <div className="flex items-center gap-2"><CalendarDays className="w-4 h-4 text-slate-400" /> {resultado.fechasEvento}</div>
+                <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-slate-400" /> {resultado.duracionHoras} horas</div>
                 <div className="flex items-center gap-2"><Hash className="w-4 h-4 text-slate-400" /> {resultado.codigoUnico}</div>
               </div>
             </div>

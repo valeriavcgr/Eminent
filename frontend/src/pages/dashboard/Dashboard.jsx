@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { obtenerResumenDashboard } from '../../services/dashboardService';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
-import { Calendar, Users, ListFilter, X, ChevronDown, ChevronUp, RefreshCw, QrCode, UserCheck } from 'lucide-react';
+import { Calendar, Users, ListFilter, X, ChevronDown, ChevronUp, RefreshCw, QrCode, UserCheck, Trophy } from 'lucide-react';
 
 export default function Dashboard() {
   const [datos, setDatos] = useState(null);
@@ -234,6 +234,55 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Ranking cruzado: asistencia real por evento individual */}
+      <Card className="border border-slate-200/60 hover:shadow-md transition-shadow duration-300 bg-white">
+        <CardHeader className="border-b border-slate-100 bg-slate-50/20 py-4">
+          <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
+            <Trophy className="w-4 h-4 text-amber-500" /> Ranking de Eventos por % de Asistencia
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
+                <tr>
+                  <th className="px-6 py-3">Evento</th>
+                  <th className="px-6 py-3">Tipo</th>
+                  <th className="px-6 py-3">Inscritos</th>
+                  <th className="px-6 py-3">Asistieron</th>
+                  <th className="px-6 py-3 w-1/3">% Asistencia</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {(datos.detalleEventos || []).length === 0 ? (
+                  <tr><td colSpan="5" className="px-6 py-8 text-center text-slate-400">Sin eventos para este filtro.</td></tr>
+                ) : (
+                  datos.detalleEventos.map((e) => (
+                    <tr key={e.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-3 font-medium text-slate-800">{e.nombre}</td>
+                      <td className="px-6 py-3 text-slate-500">{e.tipo}</td>
+                      <td className="px-6 py-3 text-slate-500">{e.inscritos}</td>
+                      <td className="px-6 py-3 text-slate-500">{e.asistieron}</td>
+                      <td className="px-6 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-full bg-slate-100 rounded-full h-2">
+                            <div
+                              className="bg-emerald-500 h-2 rounded-full transition-all duration-700 ease-out"
+                              style={{ width: `${Math.min(100, e.porcentajeAsistencia)}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-xs text-slate-500 w-10 text-right">{e.porcentajeAsistencia.toFixed(0)}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

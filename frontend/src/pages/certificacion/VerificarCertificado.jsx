@@ -185,6 +185,10 @@ export default function VerificarCertificado() {
               <span className="text-slate-500 flex items-center gap-1"><Calendar className="w-4 h-4" /> Fecha del evento:</span>
               <span className="font-medium">{resultado.fechasEvento}</span>
             </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500 flex items-center gap-1"><Clock className="w-4 h-4" /> Duración:</span>
+              <span className="font-medium">{resultado.duracionHoras} horas</span>
+            </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Código:</span>
               <span className="font-mono text-slate-500">{resultado.codigoUnico}</span>

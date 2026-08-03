@@ -4,11 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import java.util.Map;
 
-/**
- * DTO para transferir datos del dashboard principal.
- * Contiene estadísticas consolidadas de eventos, inscripciones y asistencias
- * para la visualización en la página de resumen del sistema.
- */
+
 @Getter
 @Setter
 public class DashboardDTO {
@@ -35,4 +31,6 @@ public class DashboardDTO {
     private double porcentajeAforoOcupado;
     /** Porcentaje de asistencia sobre el total de inscritos. */
     private double porcentajeAsistenciaSobreInscritos;
+
+    private java.util.List<EventoResumenDashboardDTO> detalleEventos;
 }

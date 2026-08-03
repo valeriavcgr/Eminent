@@ -28,15 +28,13 @@ public class PdfService {
     private static final String CARPETA_PDF = "certificados-pdf";
 
     public String generarPdf(String nombreParticipante, String nombreEvento,
-                             String fechasEvento, String fechaEmision, String codigoUnico,
+                             String fechasEvento, String duracion, String fechaEmision, String codigoUnico,
                              String rutaQr) throws IOException {
         Path carpeta = Path.of(CARPETA_PDF);
         if (!Files.exists(carpeta)) Files.createDirectories(carpeta);
 
         Path archivo = carpeta.resolve("certificado-" + codigoUnico + ".pdf");
 
-        // TODO va dentro de UN SOLO try-with-resources: writer, pdf y document
-        // se cierran juntos, en orden, solo UNA vez, al final de todo.
         try (PdfWriter writer = new PdfWriter(archivo.toString());
              PdfDocument pdf = new PdfDocument(writer);
              Document document = new Document(pdf, PageSize.A4.rotate())) {
@@ -108,6 +106,13 @@ public class PdfService {
                     .setTextAlignment(TextAlignment.CENTER)
                     .setMarginTop(4));
 
+            document.add(new Paragraph("Duración: " + duracion)
+                    .setFont(fuenteNormal)
+                    .setFontColor(ColorConstants.DARK_GRAY)
+                    .setFontSize(11)
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setMarginTop(2));
+
             Image qrImagen = new Image(ImageDataFactory.create(rutaQr));
             qrImagen.setWidth(85);
             qrImagen.setHeight(85);
@@ -132,8 +137,7 @@ public class PdfService {
                     .setLineWidth(1)
                     .rectangle(24, 24, w - 48, h - 48)
                     .stroke();
-
-        } // ← recién AQUÍ se cierra todo junto, una sola vez: document, pdf y writer
+        }
 
         return archivo.toString();
     }

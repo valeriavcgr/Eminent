@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import com.example.Eminent.eventos.dto.EventoDTO;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -67,9 +68,9 @@ public class CertificacionService {
 
             String codigoUnico = "CERT-" + evento.getId() + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
-            long horasTotales = Duration.between(evento.getFechaInicio(), evento.getFechaFin()).toHours();
-            long dias = Math.max(1, (long) Math.ceil(horasTotales / 24.0));
-            BigDecimal duracionDias = BigDecimal.valueOf(dias);
+            double horasReales = Duration.between(evento.getFechaInicio(), evento.getFechaFin()).toMinutes() / 60.0;
+            BigDecimal duracionHoras = BigDecimal.valueOf(horasReales).setScale(1, RoundingMode.HALF_UP);
+            String duracionTexto = duracionHoras.stripTrailingZeros().toPlainString() + " horas";
 
             String fechasEventoTexto = formatearFechasEvento(evento.getFechaInicio(), evento.getFechaFin());
 
@@ -81,12 +82,12 @@ public class CertificacionService {
                     .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 
             String rutaPdf = pdfService.generarPdf(nombreCompleto, evento.getNombre(),
-                    fechasEventoTexto, fechaEmisionTexto, codigoUnico, rutaQr);
+                    fechasEventoTexto, duracionTexto, fechaEmisionTexto, codigoUnico, rutaQr);
 
             Certificado certificado = new Certificado();
             certificado.setAsistencia(asistencia);
             certificado.setCodigoUnico(codigoUnico);
-            certificado.setDuracionHoras(duracionDias);
+            certificado.setDuracionHoras(duracionHoras);
             certificado.setRutaPdf(rutaPdf);
             certificado.setCodigoQrVerificacion(rutaQr);
             certificadoRepo.save(certificado);
