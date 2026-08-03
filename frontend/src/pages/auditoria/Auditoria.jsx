@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   PlusCircle, Pencil, XCircle, Ban, Activity,
-  Cpu, User, Globe, ListFilter
+  Cpu, User, Globe, ListFilter, LogIn, ShieldAlert
 } from 'lucide-react';
 import Pagination from '../../components/Pagination';
 
@@ -16,6 +16,8 @@ const ICONO_POR_ACCION = {
   EDITAR: { icon: Pencil, color: 'text-blue-600' },
   DESACTIVAR: { icon: XCircle, color: 'text-red-600' },
   CANCELAR: { icon: Ban, color: 'text-orange-600' },
+  LOGIN_EXITOSO: { icon: LogIn, color: 'text-emerald-600' },
+  LOGIN_FALLIDO: { icon: ShieldAlert, color: 'text-red-600' },
 };
 
 const TIPOS_AFECTADOS = ['USUARIO', 'EVENTO', 'INSCRIPCION', 'ASISTENCIA', 'CERTIFICADO'];

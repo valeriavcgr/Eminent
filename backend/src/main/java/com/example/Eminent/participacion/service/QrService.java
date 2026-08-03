@@ -12,11 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 
-/**
- * Servicio para la generación de códigos QR para inscripciones de participantes.
- * Cada QR codifica el ID de la inscripción junto con un UUID único para
- * su verificación. Los archivos PNG se almacenan en la carpeta qr-inscripciones.
- */
 @Service
 public class QrService {
 

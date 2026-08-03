@@ -14,7 +14,6 @@ import com.example.Eminent.usuarios.entity.Usuario;
 @NoArgsConstructor
 public class Auditoria {
 
-    /** Identificador único autogenerado del registro de auditoría. */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -25,9 +24,9 @@ public class Auditoria {
     @JoinColumn(name = "usuario_id", nullable = true)
     private Usuario usuario;
 
-    /** Tipos de acciones que se registran en el auditoría: CREAR, EDITAR, DESACTIVAR, CANCELAR, VER. */
+    /** Tipos de acciones que se registran en la auditoría */
     public enum Accion {
-        CREAR, EDITAR, DESACTIVAR, CANCELAR, VER
+        CREAR, EDITAR, DESACTIVAR, CANCELAR, VER, LOGIN_EXITOSO, LOGIN_FALLIDO
     }
 
     /** Acción que se realizó sobre la entidad afectada. No puede ser nulo. */

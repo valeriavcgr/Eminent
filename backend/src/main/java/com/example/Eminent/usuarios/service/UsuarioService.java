@@ -179,10 +179,16 @@ public class UsuarioService {
         try {
             authManager.authenticate(new UsernamePasswordAuthenticationToken(correo, contrasena));
         } catch (Exception e) {
+            auditoriaService.registrar(null, Auditoria.Accion.LOGIN_FALLIDO, Auditoria.TipoAfectado.USUARIO,
+                    null, "Intento de inicio de sesión fallido para el correo: " + correo, null);
             throw new BadCredentialsException("Correo o contraseña incorrectos");
         }
         Usuario usuario = repo.findByCorreo(correo)
                 .orElseThrow(() -> new BadCredentialsException("Correo o contraseña incorrectos"));
+
+        auditoriaService.registrar(usuario, Auditoria.Accion.LOGIN_EXITOSO, Auditoria.TipoAfectado.USUARIO,
+                usuario.getId(), "Inicio de sesión exitoso", null);
+
         return jwtUtil.generarToken(usuario.getCorreo(), usuario.getRol().name());
     }
 }
