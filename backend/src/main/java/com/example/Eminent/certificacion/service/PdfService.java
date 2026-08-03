@@ -1,6 +1,5 @@
 package com.example.Eminent.certificacion.service;
 
-import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.colors.DeviceRgb;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
@@ -11,6 +10,7 @@ import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.layout.Document;
+import com.itextpdf.layout.borders.SolidBorder;
 import com.itextpdf.layout.element.Image;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.properties.TextAlignment;
@@ -27,6 +27,13 @@ public class PdfService {
 
     private static final String CARPETA_PDF = "certificados-pdf";
 
+    // Paleta de la marca EMINENT
+    private static final DeviceRgb AZUL_MARCA = new DeviceRgb(37, 99, 235);
+    private static final DeviceRgb AZUL_OSCURO_TEXTO = new DeviceRgb(15, 23, 42);
+    private static final DeviceRgb AZUL_FONDO = new DeviceRgb(224, 242, 254);
+    private static final DeviceRgb GRIS_TEXTO = new DeviceRgb(71, 85, 105);
+    private static final DeviceRgb DORADO_ACENTO = new DeviceRgb(217, 119, 6);
+
     public String generarPdf(String nombreParticipante, String nombreEvento,
                              String fechasEvento, String duracion, String fechaEmision, String codigoUnico,
                              String rutaQr) throws IOException {
@@ -39,10 +46,12 @@ public class PdfService {
              PdfDocument pdf = new PdfDocument(writer);
              Document document = new Document(pdf, PageSize.A4.rotate())) {
 
-            document.setMargins(40, 50, 40, 50);
+            document.setMargins(45, 60, 45, 60);
 
             PdfFont fuenteTitulo = PdfFontFactory.createFont("Helvetica-Bold");
             PdfFont fuenteNormal = PdfFontFactory.createFont("Helvetica");
+            PdfFont fuenteCursiva = PdfFontFactory.createFont("Helvetica-Oblique");
+            PdfFont fuenteTituloCursiva = PdfFontFactory.createFont("Helvetica-BoldOblique");
 
             // 1. Crear la página explícitamente, para poder dibujar el fondo antes que nada
             PdfPage pagina = pdf.addNewPage(PageSize.A4.rotate());
@@ -50,90 +59,100 @@ public class PdfService {
             float w = pageSize.getWidth();
             float h = pageSize.getHeight();
 
-            // 2. Fondo de color — primero, para que quede debajo del texto
+            // 2. Fondo azul clarito — primero, para que quede debajo de todo el texto
             PdfCanvas fondo = new PdfCanvas(pagina);
-            fondo.setFillColor(new DeviceRgb(248, 249, 255))
+            fondo.setFillColor(AZUL_FONDO)
                     .rectangle(0, 0, w, h)
                     .fill();
 
-            // 3. Texto e imagen — se dibujan encima del fondo
+            // 3. Texto e imagen — se dibujan encima del fondo, con jerarquía de tipografías
             document.add(new Paragraph("EMINENT")
                     .setFont(fuenteTitulo)
-                    .setFontColor(new DeviceRgb(37, 99, 235))
-                    .setFontSize(36)
+                    .setFontColor(AZUL_MARCA)
+                    .setFontSize(40)
+                    .setCharacterSpacing(2)
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setMarginTop(40));
+                    .setMarginTop(35));
 
             document.add(new Paragraph("CERTIFICADO DE PARTICIPACIÓN")
-                    .setFont(fuenteTitulo)
-                    .setFontColor(ColorConstants.DARK_GRAY)
-                    .setFontSize(18)
+                    .setFont(fuenteTituloCursiva)
+                    .setFontColor(GRIS_TEXTO)
+                    .setFontSize(16)
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setMarginTop(4));
+                    .setMarginTop(2));
 
-            document.add(new Paragraph("Otorgado a:")
-                    .setFont(fuenteNormal)
-                    .setFontColor(ColorConstants.GRAY)
+            // Línea decorativa dorada, centrada, generada por el propio flujo del documento
+            // (evita cualquier cálculo manual de posición, para no repetir bugs anteriores)
+            document.add(new Paragraph(" ")
+                    .setBorderBottom(new SolidBorder(DORADO_ACENTO, 1.5f))
+                    .setWidth(220)
+                    .setHorizontalAlignment(HorizontalAlignment.CENTER)
+                    .setMarginTop(14)
+                    .setMarginBottom(0));
+
+            document.add(new Paragraph("Otorgado con orgullo a")
+                    .setFont(fuenteCursiva)
+                    .setFontColor(GRIS_TEXTO)
                     .setFontSize(13)
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setMarginTop(25));
+                    .setMarginTop(20));
 
             document.add(new Paragraph(nombreParticipante)
                     .setFont(fuenteTitulo)
-                    .setFontColor(ColorConstants.BLACK)
-                    .setFontSize(28)
+                    .setFontColor(AZUL_OSCURO_TEXTO)
+                    .setFontSize(30)
                     .setTextAlignment(TextAlignment.CENTER)
                     .setMarginTop(6));
 
-            document.add(new Paragraph("por su participación en:")
-                    .setFont(fuenteNormal)
-                    .setFontColor(ColorConstants.GRAY)
+            document.add(new Paragraph("por su participación en")
+                    .setFont(fuenteCursiva)
+                    .setFontColor(GRIS_TEXTO)
                     .setFontSize(13)
                     .setTextAlignment(TextAlignment.CENTER)
                     .setMarginTop(18));
 
             document.add(new Paragraph(nombreEvento)
                     .setFont(fuenteTitulo)
-                    .setFontColor(new DeviceRgb(37, 99, 235))
-                    .setFontSize(20)
+                    .setFontColor(AZUL_MARCA)
+                    .setFontSize(21)
                     .setTextAlignment(TextAlignment.CENTER)
                     .setMarginTop(6));
 
             document.add(new Paragraph(fechasEvento)
                     .setFont(fuenteNormal)
-                    .setFontColor(ColorConstants.DARK_GRAY)
+                    .setFontColor(GRIS_TEXTO)
                     .setFontSize(12)
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setMarginTop(4));
+                    .setMarginTop(10));
 
             document.add(new Paragraph("Duración: " + duracion)
                     .setFont(fuenteNormal)
-                    .setFontColor(ColorConstants.DARK_GRAY)
+                    .setFontColor(GRIS_TEXTO)
                     .setFontSize(11)
                     .setTextAlignment(TextAlignment.CENTER)
                     .setMarginTop(2));
 
             Image qrImagen = new Image(ImageDataFactory.create(rutaQr));
-            qrImagen.setWidth(85);
-            qrImagen.setHeight(85);
+            qrImagen.setWidth(80);
+            qrImagen.setHeight(80);
             qrImagen.setHorizontalAlignment(HorizontalAlignment.CENTER);
-            qrImagen.setMarginTop(28);
+            qrImagen.setMarginTop(24);
             document.add(qrImagen);
 
             document.add(new Paragraph("Código de verificación: " + codigoUnico)
-                    .setFont(fuenteNormal)
-                    .setFontColor(ColorConstants.GRAY)
+                    .setFont(fuenteCursiva)
+                    .setFontColor(GRIS_TEXTO)
                     .setFontSize(10)
                     .setTextAlignment(TextAlignment.CENTER)
                     .setMarginTop(6));
 
-            // 4. Bordes — al final, pero TODAVÍA dentro del mismo try, documento sigue abierto
+            // 4. Bordes — al final, con el documento todavía abierto (página ya existe con certeza)
             PdfCanvas bordes = new PdfCanvas(pdf.getPage(1));
-            bordes.setStrokeColor(new DeviceRgb(37, 99, 235))
+            bordes.setStrokeColor(AZUL_MARCA)
                     .setLineWidth(3)
                     .rectangle(18, 18, w - 36, h - 36)
                     .stroke();
-            bordes.setStrokeColor(new DeviceRgb(217, 119, 6))
+            bordes.setStrokeColor(DORADO_ACENTO)
                     .setLineWidth(1)
                     .rectangle(24, 24, w - 48, h - 48)
                     .stroke();
