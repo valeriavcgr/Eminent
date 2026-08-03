@@ -43,30 +43,7 @@ public class PdfService {
             PdfFont fuenteTitulo = PdfFontFactory.createFont("Helvetica-Bold");
             PdfFont fuenteNormal = PdfFontFactory.createFont("Helvetica");
 
-            // 1. Dibujar fondo y marcos elegantes en la página
-            PdfCanvas canvas = new PdfCanvas(pdf.getPage(1));
-            Rectangle pageSize = pdf.getPage(1).getPageSize();
-            float w = pageSize.getWidth();
-            float h = pageSize.getHeight();
-
-            // Rellenar fondo con color suave acorde a la landing (#F8F9FF)
-            canvas.setFillColor(new DeviceRgb(248, 249, 255))
-                    .rectangle(0, 0, w, h)
-                    .fill();
-
-            // Borde exterior Azul (#2563EB)
-            canvas.setStrokeColor(new DeviceRgb(37, 99, 235))
-                    .setLineWidth(3)
-                    .rectangle(18, 18, w - 36, h - 36)
-                    .stroke();
-
-            // Borde interior Dorado (#D97706)
-            canvas.setStrokeColor(new DeviceRgb(217, 119, 6))
-                    .setLineWidth(1)
-                    .rectangle(24, 24, w - 48, h - 48)
-                    .stroke();
-
-            // 2. Agregar contenido textual estructurado
+            // 1. Primero se agrega TODO el contenido — esto crea la página 1
             document.add(new Paragraph("EMINENT")
                     .setFont(fuenteTitulo)
                     .setFontColor(new DeviceRgb(37, 99, 235))
@@ -115,7 +92,6 @@ public class PdfService {
                     .setTextAlignment(TextAlignment.CENTER)
                     .setMarginTop(15));
 
-            // 3. Código QR en el centro
             Image qrImagen = new Image(ImageDataFactory.create(rutaQr));
             qrImagen.setWidth(85);
             qrImagen.setHeight(85);
@@ -129,6 +105,26 @@ public class PdfService {
                     .setFontSize(9)
                     .setTextAlignment(TextAlignment.CENTER)
                     .setMarginTop(5));
+
+            //  Recién ahora dibujamos fondo y bordes — la página 1 ya existe con certeza
+            PdfCanvas canvas = new PdfCanvas(pdf.getPage(1));
+            Rectangle pageSize = pdf.getPage(1).getPageSize();
+            float w = pageSize.getWidth();
+            float h = pageSize.getHeight();
+
+            canvas.setFillColor(new DeviceRgb(248, 249, 255))
+                    .rectangle(0, 0, w, h)
+                    .fill();
+
+            canvas.setStrokeColor(new DeviceRgb(37, 99, 235))
+                    .setLineWidth(3)
+                    .rectangle(18, 18, w - 36, h - 36)
+                    .stroke();
+
+            canvas.setStrokeColor(new DeviceRgb(217, 119, 6))
+                    .setLineWidth(1)
+                    .rectangle(24, 24, w - 48, h - 48)
+                    .stroke();
         }
 
         return archivo.toString();
