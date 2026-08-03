@@ -27,4 +27,7 @@ public interface AsistenciaRepository extends JpaRepository<Asistencia, Long> {
 
     /** Cuenta el número de registros de asistencia de un evento. */
     long countByInscripcion_Evento_Id(Long eventoId);
+
+    /** Cuenta el número de registros de asistencia de un evento por método (QR o MANUAL). */
+    long countByInscripcion_Evento_IdAndMetodo(Long eventoId, Asistencia.Metodo metodo);
 }

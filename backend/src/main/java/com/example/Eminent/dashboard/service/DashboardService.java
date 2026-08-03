@@ -64,16 +64,22 @@ public class DashboardService {
         int aforoTotal = 0;
         long inscritosActivosTotal = 0;
         long asistieronTotal = 0;
+        long asistieronQrTotal = 0;
+        long asistieronManualTotal = 0;
 
         for (Evento evento : eventos) {
             aforoTotal += evento.getAforo();
             inscritosActivosTotal += inscripcionRepository.countByEventoIdAndEstado(evento.getId(), Inscripcion.Estado.ACTIVA);
             asistieronTotal += asistenciaRepository.countByInscripcion_Evento_Id(evento.getId());
+            asistieronQrTotal += asistenciaRepository.countByInscripcion_Evento_IdAndMetodo(evento.getId(), com.example.Eminent.asistencia.entity.Asistencia.Metodo.QR);
+            asistieronManualTotal += asistenciaRepository.countByInscripcion_Evento_IdAndMetodo(evento.getId(), com.example.Eminent.asistencia.entity.Asistencia.Metodo.MANUAL);
         }
 
         dto.setAforoTotal(aforoTotal);
         dto.setInscritosActivosTotal(inscritosActivosTotal);
         dto.setAsistieronTotal(asistieronTotal);
+        dto.setAsistieronQrTotal(asistieronQrTotal);
+        dto.setAsistieronManualTotal(asistieronManualTotal);
         dto.setPorcentajeAforoOcupado(aforoTotal > 0 ? (inscritosActivosTotal * 100.0 / aforoTotal) : 0);
         dto.setPorcentajeAsistenciaSobreInscritos(inscritosActivosTotal > 0 ? (asistieronTotal * 100.0 / inscritosActivosTotal) : 0);
 

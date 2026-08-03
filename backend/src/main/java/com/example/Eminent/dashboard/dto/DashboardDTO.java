@@ -27,6 +27,10 @@ public class DashboardDTO {
     private long inscritosActivosTotal;
     /** Total de participantes que ya registraron asistencia. */
     private long asistieronTotal;
+    /** Total de participantes que registraron asistencia mediante código QR. */
+    private long asistieronQrTotal;
+    /** Total de participantes que registraron asistencia manualmente. */
+    private long asistieronManualTotal;
     /** Porcentaje de aforo ocupado respecto al total disponible. */
     private double porcentajeAforoOcupado;
     /** Porcentaje de asistencia sobre el total de inscritos. */
