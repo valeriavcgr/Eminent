@@ -22,3 +22,19 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+### npm / Vite ###
+node_modules/
+.DS_Store
+dist/
+
+###carpetas ###
+qr-inscripciones/
+.vite/
+
+### Playwright / capturas ###
+.playwright-mcp/
+*.png
+
+### Backend (se gestiona en la rama Backend, no en Frontend) ###
+backend/

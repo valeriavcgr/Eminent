@@ -1,0 +1,11 @@
+/* se activan todas las clases de taiwind para cualquier componente*/
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
