@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { verificarCertificado } from '../../services/certificacionService';
-import { ShieldCheck, ShieldX, Search, ArrowLeft, Hash, QrCode } from 'lucide-react';
+import { ShieldCheck, ShieldX, Search, ArrowLeft, Hash, QrCode, Clock, Calendar } from 'lucide-react';
 import AuthLayout from '../../components/AuthLayout';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -181,9 +181,9 @@ export default function VerificarCertificado() {
               <span className="text-slate-500">Evento:</span>
               <span className="font-medium">{resultado.eventoNombre}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Duración:</span>
-<div className="flex items-center gap-2"><Clock className="w-4 h-4 text-slate-400" /> {resultado.fechasEvento}</div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500 flex items-center gap-1"><Calendar className="w-4 h-4" /> Fecha del evento:</span>
+              <span className="font-medium">{resultado.fechasEvento}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Código:</span>

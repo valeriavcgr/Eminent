@@ -4,13 +4,14 @@ import { listarParticipantesEvento, registrarAsistenciaManual } from '../../serv
 import { useAuth } from '../../context/AuthContext';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { 
-  Users, 
-  CheckSquare, 
-  Percent, 
-  QrCode, 
-  CheckCircle2, 
+import {
+  Users,
+  CheckSquare,
+  Percent,
+  QrCode,
+  CheckCircle2,
   XCircle,
+  Clock,
   ArrowLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -67,14 +68,16 @@ export default function ListaAsistencia() {
     );
   }
 
+  const eventoTerminado = datos.eventoEstado === 'FINALIZADO' || datos.eventoEstado === 'CANCELADO';
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               icon={ArrowLeft}
               className="text-slate-500 hover:text-slate-700 p-0 h-auto"
               onClick={() => navigate(-1)}
@@ -82,9 +85,9 @@ export default function ListaAsistencia() {
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">Control de Asistencia</h1>
           </div>
         </div>
-        
-        {isMonitor && (
-          <Button 
+
+        {isMonitor && !eventoTerminado && (
+          <Button
             className={`bg-${themeColor}-600 hover:bg-${themeColor}-700 text-white shadow-md shadow-${themeColor}-200`}
             icon={QrCode}
             onClick={() => navigate(`/eventos/${id}/escaner`)}
@@ -145,13 +148,13 @@ export default function ListaAsistencia() {
                   <th className="p-3 text-left">Teléfono</th>
                   <th className="px-6 py-4">Estado</th>
                   <th className="px-6 py-4">Método</th>
-                  {isMonitor && <th className="px-6 py-4 text-right">Acciones</th>}
+                  {isMonitor && !eventoTerminado && <th className="px-6 py-4 text-right">Acciones</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {datos.participantes.length === 0 ? (
                   <tr>
-                    <td colSpan={isMonitor ? "5" : "4"} className="px-6 py-8 text-center text-slate-500">
+                    <td colSpan={isMonitor ? "7" : "6"} className="px-6 py-8 text-center text-slate-500">
                       No hay participantes registrados.
                     </td>
                   </tr>
@@ -172,17 +175,22 @@ export default function ListaAsistencia() {
                             <CheckCircle2 className="w-4 h-4 mr-1" />
                             <span>Asistió</span>
                           </div>
-                        ) : (
+                        ) : eventoTerminado ? (
                           <div className="flex items-center text-red-400">
                             <XCircle className="w-4 h-4 mr-1" />
                             <span>No asistió</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center text-amber-500">
+                            <Clock className="w-4 h-4 mr-1" />
+                            <span>Pendiente</span>
                           </div>
                         )}
                       </td>
                       <td className="px-6 py-4 text-slate-600 capitalize">
                         {p.metodo ? p.metodo.toLowerCase() : '-'}
                       </td>
-                      {isMonitor && (
+                      {isMonitor && !eventoTerminado && (
                         <td className="px-6 py-4 text-right">
                           {!p.asistio && (
                             <Button

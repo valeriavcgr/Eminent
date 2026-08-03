@@ -149,14 +149,16 @@ export default function MisEventos() {
                               >
                                 Ver Lista
                               </Button>
-                              <Button
-                                size="sm"
-                                className="bg-orange-600 hover:bg-orange-700 text-white"
-                                icon={QrCode}
-                                onClick={() => navigate(`/eventos/${e.id}/escaner`)}
-                              >
-                                Escanear QR
-                              </Button>
+                              {e.estado !== 'CANCELADO' && e.estado !== 'FINALIZADO' && (
+                                <Button
+                                  size="sm"
+                                  className="bg-orange-600 hover:bg-orange-700 text-white"
+                                  icon={QrCode}
+                                  onClick={() => navigate(`/eventos/${e.id}/escaner`)}
+                                >
+                                  Escanear QR
+                                </Button>
+                              )}
                             </>
                           )}
                         </div>

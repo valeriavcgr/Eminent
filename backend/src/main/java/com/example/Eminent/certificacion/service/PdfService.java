@@ -7,6 +7,7 @@ import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.PageSize;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.layout.Document;
@@ -27,13 +28,15 @@ public class PdfService {
     private static final String CARPETA_PDF = "certificados-pdf";
 
     public String generarPdf(String nombreParticipante, String nombreEvento,
-                             String duracion, String fechaEmision, String codigoUnico,
+                             String fechasEvento, String fechaEmision, String codigoUnico,
                              String rutaQr) throws IOException {
         Path carpeta = Path.of(CARPETA_PDF);
         if (!Files.exists(carpeta)) Files.createDirectories(carpeta);
 
         Path archivo = carpeta.resolve("certificado-" + codigoUnico + ".pdf");
 
+        // TODO va dentro de UN SOLO try-with-resources: writer, pdf y document
+        // se cierran juntos, en orden, solo UNA vez, al final de todo.
         try (PdfWriter writer = new PdfWriter(archivo.toString());
              PdfDocument pdf = new PdfDocument(writer);
              Document document = new Document(pdf, PageSize.A4.rotate())) {
@@ -43,89 +46,94 @@ public class PdfService {
             PdfFont fuenteTitulo = PdfFontFactory.createFont("Helvetica-Bold");
             PdfFont fuenteNormal = PdfFontFactory.createFont("Helvetica");
 
-            // 1. Primero se agrega TODO el contenido — esto crea la página 1
+            // 1. Crear la página explícitamente, para poder dibujar el fondo antes que nada
+            PdfPage pagina = pdf.addNewPage(PageSize.A4.rotate());
+            Rectangle pageSize = pagina.getPageSize();
+            float w = pageSize.getWidth();
+            float h = pageSize.getHeight();
+
+            // 2. Fondo de color — primero, para que quede debajo del texto
+            PdfCanvas fondo = new PdfCanvas(pagina);
+            fondo.setFillColor(new DeviceRgb(248, 249, 255))
+                    .rectangle(0, 0, w, h)
+                    .fill();
+
+            // 3. Texto e imagen — se dibujan encima del fondo
             document.add(new Paragraph("EMINENT")
                     .setFont(fuenteTitulo)
                     .setFontColor(new DeviceRgb(37, 99, 235))
-                    .setFontSize(32)
+                    .setFontSize(36)
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setMarginTop(30));
+                    .setMarginTop(40));
 
             document.add(new Paragraph("CERTIFICADO DE PARTICIPACIÓN")
                     .setFont(fuenteTitulo)
                     .setFontColor(ColorConstants.DARK_GRAY)
                     .setFontSize(18)
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setMarginTop(2));
+                    .setMarginTop(4));
 
-            document.add(new Paragraph("Otorgado con orgullo a:")
+            document.add(new Paragraph("Otorgado a:")
                     .setFont(fuenteNormal)
                     .setFontColor(ColorConstants.GRAY)
-                    .setFontSize(12)
+                    .setFontSize(13)
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setMarginTop(20));
+                    .setMarginTop(25));
 
             document.add(new Paragraph(nombreParticipante)
                     .setFont(fuenteTitulo)
                     .setFontColor(ColorConstants.BLACK)
-                    .setFontSize(26)
+                    .setFontSize(28)
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setMarginTop(5));
+                    .setMarginTop(6));
 
-            document.add(new Paragraph("Por haber completado exitosamente el curso/taller:")
+            document.add(new Paragraph("por su participación en:")
                     .setFont(fuenteNormal)
-                    .setFontSize(12)
+                    .setFontColor(ColorConstants.GRAY)
+                    .setFontSize(13)
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setMarginTop(15));
+                    .setMarginTop(18));
 
             document.add(new Paragraph(nombreEvento)
                     .setFont(fuenteTitulo)
                     .setFontColor(new DeviceRgb(37, 99, 235))
-                    .setFontSize(18)
+                    .setFontSize(20)
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setMarginTop(5));
+                    .setMarginTop(6));
 
-            document.add(new Paragraph("Fecha del evento: " + duracion + " | Fecha de emisión: " + fechaEmision + " | Código de verificación: " + codigoUnico)
+            document.add(new Paragraph(fechasEvento)
                     .setFont(fuenteNormal)
                     .setFontColor(ColorConstants.DARK_GRAY)
-                    .setFontSize(11)
+                    .setFontSize(12)
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setMarginTop(15));
+                    .setMarginTop(4));
 
             Image qrImagen = new Image(ImageDataFactory.create(rutaQr));
             qrImagen.setWidth(85);
             qrImagen.setHeight(85);
             qrImagen.setHorizontalAlignment(HorizontalAlignment.CENTER);
-            qrImagen.setMarginTop(30);
+            qrImagen.setMarginTop(28);
             document.add(qrImagen);
 
-            document.add(new Paragraph("Escanea para verificar la autenticidad")
+            document.add(new Paragraph("Código de verificación: " + codigoUnico)
                     .setFont(fuenteNormal)
                     .setFontColor(ColorConstants.GRAY)
-                    .setFontSize(9)
+                    .setFontSize(10)
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setMarginTop(5));
+                    .setMarginTop(6));
 
-            //  Recién ahora dibujamos fondo y bordes — la página 1 ya existe con certeza
-            PdfCanvas canvas = new PdfCanvas(pdf.getPage(1));
-            Rectangle pageSize = pdf.getPage(1).getPageSize();
-            float w = pageSize.getWidth();
-            float h = pageSize.getHeight();
-
-            canvas.setFillColor(new DeviceRgb(248, 249, 255))
-                    .rectangle(0, 0, w, h)
-                    .fill();
-
-            canvas.setStrokeColor(new DeviceRgb(37, 99, 235))
+            // 4. Bordes — al final, pero TODAVÍA dentro del mismo try, documento sigue abierto
+            PdfCanvas bordes = new PdfCanvas(pdf.getPage(1));
+            bordes.setStrokeColor(new DeviceRgb(37, 99, 235))
                     .setLineWidth(3)
                     .rectangle(18, 18, w - 36, h - 36)
                     .stroke();
-
-            canvas.setStrokeColor(new DeviceRgb(217, 119, 6))
+            bordes.setStrokeColor(new DeviceRgb(217, 119, 6))
                     .setLineWidth(1)
                     .rectangle(24, 24, w - 48, h - 48)
                     .stroke();
-        }
+
+        } // ← recién AQUÍ se cierra todo junto, una sola vez: document, pdf y writer
 
         return archivo.toString();
     }
