@@ -23,8 +23,10 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -38,10 +40,22 @@ public class CertificacionService {
     @Autowired private AuditoriaService auditoriaService;
     private static final String CARPETA_QR_CERT = "qr-certificados";
 
-    private String formatearDuracion(long dias) {
-        if (dias == 7) return "1 semana";
-        if (dias == 1) return "1 día";
-        return dias + " días";
+    /**
+     * Da formato a las fechas de un evento: "2 de marzo de 2026" si es un solo día,
+     * o "del 2 al 5 de marzo de 2026" si dura varios días.
+     */
+    public static String formatearFechasEvento(LocalDateTime inicio, LocalDateTime fin) {
+        Locale es = new Locale("es", "ES");
+        DateTimeFormatter fmtCompleto = DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy", es);
+        DateTimeFormatter fmtSoloDia = DateTimeFormatter.ofPattern("d", es);
+
+        if (inicio.toLocalDate().equals(fin.toLocalDate())) {
+            return inicio.format(fmtCompleto);
+        } else if (inicio.getMonth() == fin.getMonth() && inicio.getYear() == fin.getYear()) {
+            return "del " + inicio.format(fmtSoloDia) + " al " + fin.format(fmtCompleto);
+        } else {
+            return "del " + inicio.format(fmtCompleto) + " al " + fin.format(fmtCompleto);
+        }
     }
 
     public void generarCertificadosDeEvento(Evento evento) throws Exception {
@@ -57,15 +71,17 @@ public class CertificacionService {
             long dias = Math.max(1, (long) Math.ceil(horasTotales / 24.0));
             BigDecimal duracionDias = BigDecimal.valueOf(dias);
 
+            String fechasEventoTexto = formatearFechasEvento(evento.getFechaInicio(), evento.getFechaFin());
+
             String rutaQr = generarQrVerificacion(codigoUnico);
 
             Participante participante = asistencia.getInscripcion().getParticipante();
             String nombreCompleto = participante.getNombre() + " " + participante.getApellido();
-            String fechaEmisionTexto = java.time.LocalDateTime.now()
+            String fechaEmisionTexto = LocalDateTime.now()
                     .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 
             String rutaPdf = pdfService.generarPdf(nombreCompleto, evento.getNombre(),
-                    formatearDuracion(dias), fechaEmisionTexto, codigoUnico, rutaQr);
+                    fechasEventoTexto, fechaEmisionTexto, codigoUnico, rutaQr);
 
             Certificado certificado = new Certificado();
             certificado.setAsistencia(asistencia);

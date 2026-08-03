@@ -42,6 +42,9 @@ public class AsistenciaService {
 
         if (usuario.getRol() == Usuario.Rol.MONITOR) {
             validarMonitorAsignado(eventoId, usuario.getId());
+            if (evento.getEstado() == Evento.Estado.FINALIZADO || evento.getEstado() == Evento.Estado.CANCELADO) {
+                throw new IllegalArgumentException("Ya no tienes acceso a este evento porque finalizó o fue cancelado");
+            }
         }
 
         List<Inscripcion> activas = inscripcionRepo
@@ -77,6 +80,7 @@ public class AsistenciaService {
         ListadoAsistenciaDTO resultado = new ListadoAsistenciaDTO();
         resultado.setResumen(resumen);
         resultado.setParticipantes(lista);
+        resultado.setEventoEstado(evento.getEstado().name());
         return resultado;
     }
 

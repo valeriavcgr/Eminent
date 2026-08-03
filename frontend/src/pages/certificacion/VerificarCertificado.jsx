@@ -183,7 +183,7 @@ export default function VerificarCertificado() {
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Duración:</span>
-              <span className="font-medium">{resultado.duracionHoras} horas</span>
+<div className="flex items-center gap-2"><Clock className="w-4 h-4 text-slate-400" /> {resultado.fechasEvento}</div>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Código:</span>

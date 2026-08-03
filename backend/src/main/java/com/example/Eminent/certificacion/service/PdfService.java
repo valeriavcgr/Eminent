@@ -108,7 +108,7 @@ public class PdfService {
                     .setTextAlignment(TextAlignment.CENTER)
                     .setMarginTop(5));
 
-            document.add(new Paragraph("Duración: " + duracion + " | Fecha de emisión: " + fechaEmision + " | Código de verificación: " + codigoUnico)
+            document.add(new Paragraph("Fecha del evento: " + duracion + " | Fecha de emisión: " + fechaEmision + " | Código de verificación: " + codigoUnico)
                     .setFont(fuenteNormal)
                     .setFontColor(ColorConstants.DARK_GRAY)
                     .setFontSize(11)
