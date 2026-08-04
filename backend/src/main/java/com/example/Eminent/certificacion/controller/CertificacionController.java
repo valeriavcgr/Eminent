@@ -36,6 +36,22 @@ public class CertificacionController {
                 .body(archivo);
     }
 
+    @GetMapping("/info")
+    public ResponseEntity<CertificadoPublicoDTO> infoPorDocumento(@RequestParam String documento, @RequestParam Long eventoId) {
+        Certificado cert = service.buscarPorDocumentoYEvento(documento, eventoId);
+        var evento = cert.getAsistencia().getInscripcion().getEvento();
+
+        CertificadoPublicoDTO dto = new CertificadoPublicoDTO();
+        dto.setParticipanteNombre(cert.getAsistencia().getInscripcion().getParticipante().getNombre()
+                + " " + cert.getAsistencia().getInscripcion().getParticipante().getApellido());
+        dto.setEventoNombre(evento.getNombre());
+        dto.setDuracionHoras(cert.getDuracionHoras());
+        dto.setFechasEvento(CertificacionService.formatearFechasEvento(evento.getFechaInicio(), evento.getFechaFin()));
+        dto.setFechaEmision(cert.getFechaEmision().toString());
+        dto.setCodigoUnico(cert.getCodigoUnico());
+        dto.setValido(true);
+        return ResponseEntity.ok(dto);
+    }
 
     @GetMapping("/verificar/{codigo}")
     public ResponseEntity<CertificadoPublicoDTO> verificar(@PathVariable String codigo) {
