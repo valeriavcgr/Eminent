@@ -1,13 +1,23 @@
 import { useState, useEffect } from 'react';
 import { obtenerResumenDashboard } from '../../services/dashboardService';
+import { obtenerComentariosEvento } from '../../services/encuestaService';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
-import { Calendar, Users, ListFilter, X, ChevronDown, ChevronUp, RefreshCw, QrCode, UserCheck, Trophy } from 'lucide-react';
+import { Modal } from '../../components/ui/Modal';
+import { Calendar, Users, ListFilter, X, ChevronDown, ChevronUp, RefreshCw, QrCode, UserCheck, Trophy, Star, MessageCircle } from 'lucide-react';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export default function Dashboard() {
   const [datos, setDatos] = useState(null);
   const [filtros, setFiltros] = useState({ tipo: '', modalidad: '', estado: '', fechaDesde: '', fechaHasta: '' });
   const [filtrosVisibles, setFiltrosVisibles] = useState(false);
   const [cargando, setCargando] = useState(false);
+
+  // --- Modal de comentarios ---
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [eventoSeleccionado, setEventoSeleccionado] = useState(null);
+  const [comentarios, setComentarios] = useState([]);
+  const [cargandoComentarios, setCargandoComentarios] = useState(false);
 
   useEffect(() => {
     cargar();
@@ -31,6 +41,21 @@ export default function Dashboard() {
   const limpiarFiltros = () => setFiltros({ tipo: '', modalidad: '', estado: '', fechaDesde: '', fechaHasta: '' });
   const hayFiltrosActivos = Object.values(filtros).some((v) => v);
 
+  const abrirComentarios = async (evento) => {
+    setEventoSeleccionado(evento);
+    setModalAbierto(true);
+    setCargandoComentarios(true);
+    try {
+      const datos = await obtenerComentariosEvento(evento.id);
+      setComentarios(datos);
+    } catch (error) {
+      console.error("Error al cargar comentarios", error);
+      setComentarios([]);
+    } finally {
+      setCargandoComentarios(false);
+    }
+  };
+
   if (!datos) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
@@ -45,6 +70,7 @@ export default function Dashboard() {
     { label: 'Inscritos Activos', valor: datos.inscritosActivosTotal, icon: Users, color: 'text-emerald-600 bg-emerald-50 border-emerald-100 hover:border-emerald-300' },
     { label: 'Asistencia por QR', valor: datos.asistieronQrTotal, icon: QrCode, color: 'text-orange-600 bg-orange-50 border-orange-100 hover:border-orange-300' },
     { label: 'Asistencia Manual', valor: datos.asistieronManualTotal, icon: UserCheck, color: 'text-purple-600 bg-purple-50 border-purple-100 hover:border-purple-300' },
+    { label: 'Satisfacción Promedio', valor: datos.promedioSatisfaccionGeneral ? `${datos.promedioSatisfaccionGeneral.toFixed(1)} ★` : 'Sin datos', icon: Star, color: 'text-amber-600 bg-amber-50 border-amber-100 hover:border-amber-300' },
   ];
 
   const BarraDesglose = ({ datos: entradas, colorClass = 'bg-blue-500' }) => {
@@ -183,7 +209,7 @@ export default function Dashboard() {
       </div>
 
       {/* KPI Metrics Cards Grid with Premium Interactions */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
         {tarjetas.map((t) => (
           <Card 
             key={t.label} 
@@ -252,11 +278,13 @@ export default function Dashboard() {
                   <th className="px-6 py-3">Inscritos</th>
                   <th className="px-6 py-3">Asistieron</th>
                   <th className="px-6 py-3 w-1/3">% Asistencia</th>
+                  <th className="px-6 py-3">Satisfacción</th>
+                  <th className="px-6 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {(datos.detalleEventos || []).length === 0 ? (
-                  <tr><td colSpan="5" className="px-6 py-8 text-center text-slate-400">Sin eventos para este filtro.</td></tr>
+                  <tr><td colSpan="7" className="px-6 py-8 text-center text-slate-400">Sin eventos para este filtro.</td></tr>
                 ) : (
                   datos.detalleEventos.map((e) => (
                     <tr key={e.id} className="hover:bg-slate-50 transition-colors">
@@ -275,6 +303,19 @@ export default function Dashboard() {
                           <span className="text-xs text-slate-500 w-10 text-right">{e.porcentajeAsistencia.toFixed(0)}%</span>
                         </div>
                       </td>
+                      <td className="px-6 py-3">
+                        {e.promedioSatisfaccion
+                          ? <span className="flex items-center gap-1 text-amber-600 font-medium"><Star className="w-3.5 h-3.5 fill-amber-400" /> {e.promedioSatisfaccion.toFixed(1)}</span>
+                          : <span className="text-slate-400 text-xs">Sin calificar</span>}
+                      </td>
+                      <td className="px-6 py-3 text-right">
+                        <button
+                          onClick={() => abrirComentarios(e)}
+                          className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" /> Ver comentarios
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -283,6 +324,38 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal de comentarios */}
+      <Modal
+        isOpen={modalAbierto}
+        onClose={() => setModalAbierto(false)}
+        title={eventoSeleccionado ? `Comentarios — ${eventoSeleccionado.nombre}` : 'Comentarios'}
+      >
+        {cargandoComentarios ? (
+          <p className="text-sm text-slate-500 text-center py-6">Cargando comentarios...</p>
+        ) : comentarios.length === 0 ? (
+          <p className="text-sm text-slate-400 text-center py-6">Nadie ha dejado comentarios para este evento todavía.</p>
+        ) : (
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            {comentarios.map((c, idx) => (
+              <div key={idx} className="border-b border-slate-100 pb-3 last:border-0">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-medium text-sm text-slate-800">{c.participanteNombre}</span>
+                  <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star key={n} className={`w-3.5 h-3.5 ${n <= c.calificacion ? 'fill-amber-400 text-amber-400' : 'fill-slate-100 text-slate-200'}`} />
+                    ))}
+                  </div>
+                </div>
+                {c.comentario && <p className="text-sm text-slate-600">{c.comentario}</p>}
+                <p className="text-xs text-slate-400 mt-1">
+                  {c.fechaCreacion ? format(new Date(c.fechaCreacion), "d MMM yyyy - HH:mm", { locale: es }) : ''}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

@@ -9,28 +9,17 @@ import java.util.Map;
 @Setter
 public class DashboardDTO {
 
-    /** Total de eventos registrados en el sistema. */
     private long totalEventos;
-    /** Distribución de eventos por tipo (TALLER, CAPACITACION, TORNEO). */
     private Map<String, Long> eventosPorTipo;
-    /** Distribución de eventos por modalidad (PRESENCIAL, VIRTUAL). */
     private Map<String, Long> eventosPorModalidad;
-    /** Distribución de eventos por estado (PROGRAMADO, EN_CURSO, FINALIZADO, CANCELADO). */
     private Map<String, Long> eventosPorEstado;
-    /** Suma total del aforo de todos los eventos. */
     private int aforoTotal;
-    /** Total de inscritos activos en todos los eventos. */
     private long inscritosActivosTotal;
-    /** Total de participantes que ya registraron asistencia. */
     private long asistieronTotal;
-    /** Total de participantes que registraron asistencia mediante código QR. */
     private long asistieronQrTotal;
-    /** Total de participantes que registraron asistencia manualmente. */
     private long asistieronManualTotal;
-    /** Porcentaje de aforo ocupado respecto al total disponible. */
     private double porcentajeAforoOcupado;
-    /** Porcentaje de asistencia sobre el total de inscritos. */
     private double porcentajeAsistenciaSobreInscritos;
-
     private java.util.List<EventoResumenDashboardDTO> detalleEventos;
+    private Double promedioSatisfaccionGeneral;
 }

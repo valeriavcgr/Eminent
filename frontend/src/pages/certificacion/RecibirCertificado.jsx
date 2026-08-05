@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listarEventosFinalizados, obtenerInfoCertificado, descargarCertificado } from '../../services/certificacionService';
+import { enviarEncuesta } from '../../services/encuestaService';
 import { toast } from 'sonner';
-import { IdCard, CalendarCheck, Download, ArrowLeft, Award, AlertCircle, Share2, Search, ShieldCheck, Calendar, Clock, Hash } from 'lucide-react';
+import { IdCard, CalendarCheck, Download, ArrowLeft, Award, AlertCircle, Share2, Search, ShieldCheck, Calendar, Clock, Hash, Star, MessageSquare } from 'lucide-react';
 import AuthLayout from '../../components/AuthLayout';
 
 function compartirEnLinkedIn(codigoUnico) {
@@ -19,6 +20,15 @@ export default function RecibirCertificado() {
   const [buscando, setBuscando] = useState(false);
   const [descargando, setDescargando] = useState(false);
   const [info, setInfo] = useState(null);
+
+  // --- estado de la encuesta ---
+  const [calificacion, setCalificacion] = useState(0);
+  const [calificacionHover, setCalificacionHover] = useState(0);
+  const [comentario, setComentario] = useState('');
+  const [enviandoEncuesta, setEnviandoEncuesta] = useState(false);
+  const [encuestaEnviada, setEncuestaEnviada] = useState(false);
+  const [mostrarEncuesta, setMostrarEncuesta] = useState(true);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -27,6 +37,14 @@ export default function RecibirCertificado() {
       .catch(() => setErrorCarga(true));
   }, []);
 
+  const reiniciarEncuesta = () => {
+    setCalificacion(0);
+    setCalificacionHover(0);
+    setComentario('');
+    setEncuestaEnviada(false);
+    setMostrarEncuesta(true);
+  };
+
   const handleBuscar = async (e) => {
     e.preventDefault();
     setBuscando(true);
@@ -34,6 +52,7 @@ export default function RecibirCertificado() {
     try {
       const datos = await obtenerInfoCertificado(documento, eventoId);
       setInfo(datos);
+      reiniciarEncuesta();
     } catch (err) {
       toast.error(err.response?.data?.mensaje || 'No hay certificado disponible para este evento');
     } finally {
@@ -56,6 +75,23 @@ export default function RecibirCertificado() {
       toast.error(err.response?.data?.mensaje || 'Error al descargar el certificado');
     } finally {
       setDescargando(false);
+    }
+  };
+
+  const handleEnviarEncuesta = async () => {
+    if (calificacion === 0) {
+      toast.error('Selecciona una calificación antes de enviar');
+      return;
+    }
+    setEnviandoEncuesta(true);
+    try {
+      await enviarEncuesta(info.codigoUnico, calificacion, comentario);
+      setEncuestaEnviada(true);
+      toast.success('¡Gracias por tu opinión!');
+    } catch (err) {
+      toast.error(err.response?.data?.mensaje || 'Error al enviar tu calificación');
+    } finally {
+      setEnviandoEncuesta(false);
     }
   };
 
@@ -175,6 +211,72 @@ export default function RecibirCertificado() {
               <Share2 className="w-4 h-4 mr-2" /> Compartir
             </button>
           </div>
+
+          {/* --- Encuesta post-evento --- */}
+          {mostrarEncuesta && (
+            <div className="border border-slate-200 bg-white rounded-2xl p-6 shadow-sm">
+              {encuestaEnviada ? (
+                <div className="text-center py-2">
+                  <p className="font-bold text-slate-900">¡Gracias por calificar el evento! </p>
+                  <p className="text-sm text-slate-500 mt-1">Tu opinión nos ayuda a mejorar.</p>
+                </div>
+              ) : (
+                <>
+                  <p className="font-bold text-slate-900 text-sm mb-1">¿Cómo calificarías este evento?</p>
+                  <p className="text-xs text-slate-500 mb-4">Tu opinión es opcional y anónima para otros participantes.</p>
+
+                  <div className="flex justify-center gap-1 mb-4">
+                    {[1, 2, 3, 4, 5].map((valor) => (
+                      <button
+                        key={valor}
+                        type="button"
+                        onClick={() => setCalificacion(valor)}
+                        onMouseEnter={() => setCalificacionHover(valor)}
+                        onMouseLeave={() => setCalificacionHover(0)}
+                        className="p-1"
+                      >
+                        <Star
+                          className={`w-8 h-8 transition-colors ${
+                            valor <= (calificacionHover || calificacion)
+                              ? 'fill-amber-400 text-amber-400'
+                              : 'fill-slate-100 text-slate-300'
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="relative mb-4">
+                    <MessageSquare className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                    <textarea
+                      value={comentario}
+                      onChange={(e) => setComentario(e.target.value)}
+                      placeholder="Cuéntanos qué te pareció (opcional)"
+                      rows={3}
+                      maxLength={300}
+                      className="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 text-sm bg-slate-50 resize-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setMostrarEncuesta(false)}
+                      className="py-2.5 rounded-xl text-sm font-medium text-slate-500 border border-slate-200 hover:bg-slate-50 transition-colors"
+                    >
+                      Omitir
+                    </button>
+                    <button
+                      onClick={handleEnviarEncuesta}
+                      disabled={enviandoEncuesta}
+                      className="py-2.5 rounded-xl text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 transition-colors disabled:opacity-70"
+                    >
+                      {enviandoEncuesta ? 'Enviando...' : 'Enviar calificación'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           <button
             onClick={() => setInfo(null)}
