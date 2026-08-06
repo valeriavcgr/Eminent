@@ -223,7 +223,7 @@ export default function RecibirCertificado() {
               ) : (
                 <>
                   <p className="font-bold text-slate-900 text-sm mb-1">¿Cómo calificarías este evento?</p>
-                  <p className="text-xs text-slate-500 mb-4">Tu opinión es opcional y anónima para otros participantes.</p>
+                  <p className="text-xs text-slate-500 mb-4">Tu opinión es opcional e importante para nosotros</p>
 
                   <div className="flex justify-center gap-1 mb-4">
                     {[1, 2, 3, 4, 5].map((valor) => (
