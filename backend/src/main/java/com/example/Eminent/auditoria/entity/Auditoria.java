@@ -39,9 +39,9 @@ public class Auditoria {
     private Accion accion;
 
     /** Tipos de entidades que pueden ser afectadas por una acción: USUARIO, EVENTO, PARTICIPANTE,
-     *  INSCRIPCION, ASISTENCIA, CERTIFICADO. */
+     *  INSCRIPCION, ASISTENCIA, CERTIFICADO, ENCUESTA. */
     public enum TipoAfectado {
-        USUARIO, EVENTO, PARTICIPANTE, INSCRIPCION, ASISTENCIA, CERTIFICADO
+        USUARIO, EVENTO, PARTICIPANTE, INSCRIPCION, ASISTENCIA, CERTIFICADO, ENCUESTA
     }
 
     /** Tipo de entidad a la que se aplicó la acción. No puede ser nulo. */

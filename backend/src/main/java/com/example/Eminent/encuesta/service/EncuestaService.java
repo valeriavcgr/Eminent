@@ -1,5 +1,7 @@
 package com.example.Eminent.encuesta.service;
 
+import com.example.Eminent.auditoria.entity.Auditoria;
+import com.example.Eminent.auditoria.service.AuditoriaService;
 import com.example.Eminent.certificacion.entity.Certificado;
 import com.example.Eminent.certificacion.repository.CertificadoRepository;
 import com.example.Eminent.encuesta.dto.EncuestaComentarioDTO;
@@ -17,6 +19,7 @@ public class EncuestaService {
 
     @Autowired private CertificadoRepository certificadoRepo;
     @Autowired private EncuestaRepository encuestaRepo;
+    @Autowired private AuditoriaService auditoriaService;
 
     public void registrar(EncuestaDTO datos) {
         if (datos.getCalificacion() < 1 || datos.getCalificacion() > 5) {
@@ -36,7 +39,10 @@ public class EncuestaService {
         encuesta.setAsistencia(certificado.getAsistencia());
         encuesta.setCalificacion(datos.getCalificacion());
         encuesta.setComentario(datos.getComentario());
-        encuestaRepo.save(encuesta);
+        Encuesta guardada = encuestaRepo.save(encuesta);
+
+        auditoriaService.registrar(null, Auditoria.Accion.CREAR, Auditoria.TipoAfectado.ENCUESTA,
+                guardada.getId(), "Registro de encuesta de satisfacción (certificado " + datos.getCodigoUnico() + ")", null);
     }
 
     public List<EncuestaComentarioDTO> listarPorEvento(Long eventoId) {

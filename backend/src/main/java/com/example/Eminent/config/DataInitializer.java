@@ -72,6 +72,7 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) throws Exception {
         relajarColumnaRolLegada();
         repararForeignKeyAuditoriaUsuario();
+        repararCheckTipoAfectadoAuditoria();
         sembrarCatalogoRoles();
         migrarRolUnicoAUsuarioRoles();
         sembrarUsuarios();
@@ -117,6 +118,21 @@ public class DataInitializer implements CommandLineRunner {
                             'FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE SET NULL';
                 END IF;
             END $$;
+            """);
+    }
+
+    /**
+     * La restricción CHECK de `auditoria.tipo_afectado` se generó con los valores del enum
+     * {@code Auditoria.TipoAfectado} vigentes en su momento; `ddl-auto=update` no la amplía
+     * cuando se agrega un valor nuevo al enum (p. ej. ENCUESTA), así que insertar una auditoría
+     * con ese valor fallaría. Se recrea con la lista completa actual en cada arranque
+     * (drop+create incondicional; inofensivo si ya está al día).
+     */
+    private void repararCheckTipoAfectadoAuditoria() {
+        jdbcTemplate.execute("ALTER TABLE auditoria DROP CONSTRAINT IF EXISTS auditoria_tipo_afectado_check");
+        jdbcTemplate.execute("""
+            ALTER TABLE auditoria ADD CONSTRAINT auditoria_tipo_afectado_check
+            CHECK (tipo_afectado IN ('USUARIO','EVENTO','PARTICIPANTE','INSCRIPCION','ASISTENCIA','CERTIFICADO','ENCUESTA'))
             """);
     }
 
