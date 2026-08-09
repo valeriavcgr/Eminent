@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { listarEventos, cancelarEvento, asignarMonitor } from '../../services/eventoService';
 import { listarUsuarios } from '../../services/usuarioService';
+import { listarParticipantesEvento } from '../../services/asistenciaService';
+import { obtenerComentariosEvento } from '../../services/encuestaService';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
@@ -15,7 +17,9 @@ import {
   MapPin,
   Clock,
   AlertTriangle,
-  UserPlus
+  UserPlus,
+  Star,
+  MessageCircle
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -40,6 +44,12 @@ export default function ListarEvento() {
   const [monitores, setMonitores] = useState([]);
   const [selectedMonitor, setSelectedMonitor] = useState('');
   const [isAssigning, setIsAssigning] = useState(false);
+
+  const [encuestaModalOpen, setEncuestaModalOpen] = useState(false);
+  const [eventoEncuesta, setEventoEncuesta] = useState(null);
+  const [resumenEncuesta, setResumenEncuesta] = useState(null);
+  const [comentariosEncuesta, setComentariosEncuesta] = useState([]);
+  const [cargandoEncuesta, setCargandoEncuesta] = useState(false);
 
   const navigate = useNavigate();
 
@@ -107,6 +117,30 @@ export default function ListarEvento() {
       setIsAssigning(false);
     }
   };
+
+  const abrirResultadosEncuesta = async (evento) => {
+    setEventoEncuesta(evento);
+    setEncuestaModalOpen(true);
+    setCargandoEncuesta(true);
+    try {
+      const [asistencia, comentarios] = await Promise.all([
+        listarParticipantesEvento(evento.id),
+        obtenerComentariosEvento(evento.id),
+      ]);
+      setResumenEncuesta(asistencia.resumen);
+      setComentariosEncuesta(comentarios || []);
+    } catch (error) {
+      toast.error('Error al cargar los resultados de la encuesta');
+      setResumenEncuesta(null);
+      setComentariosEncuesta([]);
+    } finally {
+      setCargandoEncuesta(false);
+    }
+  };
+
+  const promedioEstrellas = comentariosEncuesta.length
+    ? comentariosEncuesta.reduce((suma, c) => suma + c.calificacion, 0) / comentariosEncuesta.length
+    : null;
 
   const filteredEventos = eventos.filter(e =>
     e.nombre.toLowerCase().includes(searchTerm.toLowerCase())
@@ -282,6 +316,17 @@ export default function ListarEvento() {
                               title="Cancelar Evento"
                             />
                           )}
+
+                          {e.estado === 'FINALIZADO' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                              icon={Star}
+                              onClick={() => abrirResultadosEncuesta(e)}
+                              title="Resultados de Encuesta"
+                            />
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -373,6 +418,69 @@ export default function ListarEvento() {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      <Modal
+        isOpen={encuestaModalOpen}
+        onClose={() => setEncuestaModalOpen(false)}
+        title={eventoEncuesta ? `Resultados de Encuesta — ${eventoEncuesta.nombre}` : 'Resultados de Encuesta'}
+      >
+        {cargandoEncuesta ? (
+          <p className="text-sm text-slate-500 text-center py-6">Cargando resultados...</p>
+        ) : (
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-slate-50 rounded-lg p-3 text-center border border-slate-100">
+                <p className="text-xs font-medium text-slate-500">Inscritos</p>
+                <p className="text-lg font-bold text-slate-800">{resumenEncuesta?.totalInscritos ?? '—'}</p>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-3 text-center border border-slate-100">
+                <p className="text-xs font-medium text-slate-500">Asistieron</p>
+                <p className="text-lg font-bold text-slate-800">{resumenEncuesta?.totalAsistieron ?? '—'}</p>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-3 text-center border border-slate-100">
+                <p className="text-xs font-medium text-slate-500">% Asistencia</p>
+                <p className="text-lg font-bold text-slate-800">
+                  {resumenEncuesta ? `${resumenEncuesta.porcentajeAforoOcupado.toFixed(0)}%` : '—'}
+                </p>
+              </div>
+              <div className="bg-amber-50 rounded-lg p-3 text-center border border-amber-100">
+                <p className="text-xs font-medium text-amber-700">Satisfacción</p>
+                <p className="text-lg font-bold text-amber-700 flex items-center justify-center gap-1">
+                  {promedioEstrellas ? <>{promedioEstrellas.toFixed(1)} <Star className="w-4 h-4 fill-amber-400 text-amber-400" /></> : 'Sin datos'}
+                </p>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100 pt-4">
+              <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5 mb-3">
+                <MessageCircle className="w-4 h-4" /> Comentarios ({comentariosEncuesta.length})
+              </h3>
+              {comentariosEncuesta.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-6">Nadie ha dejado comentarios para este evento todavía.</p>
+              ) : (
+                <div className="space-y-4 max-h-72 overflow-y-auto">
+                  {comentariosEncuesta.map((c, idx) => (
+                    <div key={idx} className="border-b border-slate-100 pb-3 last:border-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-sm text-slate-800">{c.participanteNombre}</span>
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <Star key={n} className={`w-3.5 h-3.5 ${n <= c.calificacion ? 'fill-amber-400 text-amber-400' : 'fill-slate-100 text-slate-200'}`} />
+                          ))}
+                        </div>
+                      </div>
+                      {c.comentario && <p className="text-sm text-slate-600">{c.comentario}</p>}
+                      <p className="text-xs text-slate-400 mt-1">
+                        {c.fechaCreacion ? format(new Date(c.fechaCreacion), "d MMM yyyy - HH:mm", { locale: es }) : ''}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
