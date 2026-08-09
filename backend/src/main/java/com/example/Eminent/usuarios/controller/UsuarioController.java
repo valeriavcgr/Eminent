@@ -11,6 +11,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -60,6 +62,22 @@ public class UsuarioController {
     public ResponseEntity<Page<UsuarioDTO>> listar(@RequestParam(required = false) String rol, Pageable pageable) {
         Page<Usuario> pagina = service.listar(rol, pageable);
         return ResponseEntity.ok(pagina.map(this::toDTO));
+    }
+
+    /**
+     * Obtiene los datos del propio usuario autenticado, para la pantalla "Mi Perfil".
+     * Solo accesible por ADMIN (es el único rol que puede crear/editar usuarios y, por lo
+     * tanto, editarse a sí mismo).
+     */
+    @GetMapping("/usuarios/yo")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UsuarioDTO> obtenerActual() {
+        return ResponseEntity.ok(toDTO(usuarioActual()));
+    }
+
+    private Usuario usuarioActual() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return service.obtenerPorCorreo(auth.getName());
     }
 
     /**

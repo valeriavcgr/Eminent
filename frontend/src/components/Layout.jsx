@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { colorFondoRol, colorTextoRol } from '../utils/rolColores';
@@ -14,6 +14,8 @@ import {
   X,
   AlertTriangle,
   ChevronRight,
+  ChevronDown,
+  UserCircle,
   LayoutDashboard
 } from 'lucide-react';
 
@@ -23,6 +25,18 @@ export default function Layout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
+  const [perfilMenuAbierto, setPerfilMenuAbierto] = useState(false);
+  const perfilMenuRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickFuera(e) {
+      if (perfilMenuRef.current && !perfilMenuRef.current.contains(e.target)) {
+        setPerfilMenuAbierto(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickFuera);
+    return () => document.removeEventListener('mousedown', handleClickFuera);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -168,14 +182,44 @@ export default function Layout() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm ${getRoleColor()}`}>
-            {rolActivo?.[0]}
+        {roles.includes('ADMIN') ? (
+          <div className="relative" ref={perfilMenuRef}>
+            <button
+              onClick={() => setPerfilMenuAbierto((abierto) => !abierto)}
+              className="flex items-center gap-3 rounded-lg px-1.5 py-1 hover:bg-slate-100 transition-colors"
+            >
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm ${getRoleColor()}`}>
+                {rolActivo?.[0]}
+              </div>
+              <div className="hidden sm:block text-left">
+                <p className="text-sm font-semibold text-slate-800 leading-tight">{rolActivo}</p>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${perfilMenuAbierto ? 'rotate-180' : ''}`} />
+            </button>
+
+            {perfilMenuAbierto && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+                <Link
+                  to="/perfil"
+                  onClick={() => setPerfilMenuAbierto(false)}
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <UserCircle className="w-4 h-4 text-slate-400" />
+                  Mi Perfil
+                </Link>
+              </div>
+            )}
           </div>
-          <div className="hidden sm:block">
-            <p className="text-sm font-semibold text-slate-800 leading-tight">{rolActivo}</p>
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm ${getRoleColor()}`}>
+              {rolActivo?.[0]}
+            </div>
+            <div className="hidden sm:block">
+              <p className="text-sm font-semibold text-slate-800 leading-tight">{rolActivo}</p>
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
         {/* Page Content */}

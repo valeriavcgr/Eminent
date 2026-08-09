@@ -121,6 +121,15 @@ public class UsuarioService {
     }
 
     /**
+     * Obtiene un usuario por su correo electrónico (usado para resolver "mi perfil"
+     * a partir del usuario autenticado en la sesión actual).
+     */
+    public Usuario obtenerPorCorreo(String correo) {
+        return repo.findByCorreo(correo)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+    }
+
+    /**
      * Edita los datos de un usuario existente con validación de teléfono y contraseña opcional.
      * Un ADMIN puede asignar o quitar cualquier rol (incluido ADMIN) a cualquier usuario,
      * incluso a sí mismo — esta acción ya está reservada a administradores vía @PreAuthorize.

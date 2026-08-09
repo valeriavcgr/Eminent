@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import LandingPublica from './pages/eventos/LandingPublica';
 import ListaUsuarios from './pages/usuarios/ListaUsuarios';
 import FormularioUsuario from './pages/usuarios/FormularioUsuario';
+import Perfil from './pages/usuarios/Perfil';
 import ListarEvento from './pages/eventos/ListarEvento';
 import FormularioEvento from './pages/eventos/FormularioEvento';
 import FormularioInscripcion from './pages/participacion/FormularioInscripcion';
@@ -44,6 +45,7 @@ function App() {
             <Route path="/usuarios" element={<ListaUsuarios />} />
             <Route path="/usuarios/nuevo" element={<FormularioUsuario />} />
             <Route path="/usuarios/editar/:id" element={<FormularioUsuario />} />
+            <Route path="/perfil" element={<Perfil />} />
 
             <Route path="/eventos" element={<ListarEvento />} />
             <Route path="/eventos/nuevo" element={<FormularioEvento />} />
