@@ -188,7 +188,7 @@ public class EventosService {
         Usuario monitor = usuarioRepository.findById(monitorId)
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado con id " + monitorId));
 
-        if (monitor.getRol() != Usuario.Rol.MONITOR) {
+        if (!monitor.tieneRol(Usuario.Rol.MONITOR)) {
             throw new IllegalArgumentException("Solo usuarios con rol MONITOR pueden ser asignados como monitor");
         }
 

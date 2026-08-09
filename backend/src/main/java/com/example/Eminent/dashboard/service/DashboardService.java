@@ -31,18 +31,19 @@ public class DashboardService {
     @Autowired private EncuestaRepository encuestaRepository;
 
     public DashboardDTO obtenerResumen(Evento.Tipo tipo, Evento.Modalidad modalidad, Evento.Estado estado,
-                                       LocalDateTime fechaDesde, LocalDateTime fechaHasta, Usuario usuario) {
+                                       LocalDateTime fechaDesde, LocalDateTime fechaHasta, Usuario usuario,
+                                       Usuario.Rol rolActivo) {
 
         LocalDateTime desde = (fechaDesde != null) ? fechaDesde : LocalDateTime.of(2000, 1, 1, 0, 0);
         LocalDateTime hasta = (fechaHasta != null) ? fechaHasta : LocalDateTime.of(2100, 1, 1, 0, 0);
 
         List<Evento> eventos = eventoRepository.buscarConFiltros(tipo, modalidad, estado, desde, hasta, Pageable.unpaged()).getContent();
 
-        if (usuario.getRol() == Usuario.Rol.OPERADOR) {
+        if (rolActivo == Usuario.Rol.OPERADOR) {
             eventos = eventos.stream()
                     .filter(e -> e.getCreadoPor().getId().equals(usuario.getId()))
                     .toList();
-        } else if (usuario.getRol() == Usuario.Rol.MONITOR) {
+        } else if (rolActivo == Usuario.Rol.MONITOR) {
             List<Long> idsAsignados = eventoMonitorRepository.findByMonitor_Id(usuario.getId()).stream()
                     .map(em -> em.getEvento().getId())
                     .toList();

@@ -2,6 +2,7 @@ package com.example.Eminent.asistencia.controller;
 
 import com.example.Eminent.asistencia.dto.ListadoAsistenciaDTO;
 import com.example.Eminent.asistencia.service.AsistenciaService;
+import com.example.Eminent.auth.RolActivoResolver;
 import com.example.Eminent.usuarios.entity.Usuario;
 import com.example.Eminent.usuarios.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,12 +20,16 @@ public class AsistenciaController {
 
     @Autowired private AsistenciaService service;
     @Autowired private UsuarioRepository usuarioRepository;
+    @Autowired private RolActivoResolver rolActivoResolver;
 
     @GetMapping("/eventos/{id}/participantes")
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR') or hasRole('MONITOR')")
-    public ResponseEntity<ListadoAsistenciaDTO> listar(@PathVariable Long id) {
+    public ResponseEntity<ListadoAsistenciaDTO> listar(
+            @PathVariable Long id,
+            @RequestHeader(value = RolActivoResolver.HEADER, required = false) String rolActivoHeader) {
         Usuario usuario = usuarioActual();
-        return ResponseEntity.ok(service.listarParticipantes(id, usuario));
+        Usuario.Rol rolActivo = rolActivoResolver.resolver(usuario, rolActivoHeader);
+        return ResponseEntity.ok(service.listarParticipantes(id, usuario, rolActivo));
     }
 
     @PostMapping("/asistencias/manual")

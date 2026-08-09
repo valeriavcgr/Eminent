@@ -2,6 +2,7 @@ package com.example.Eminent.usuarios.controller;
 
 import com.example.Eminent.usuarios.dto.LoginRequest;
 import com.example.Eminent.usuarios.dto.UsuarioDTO;
+import com.example.Eminent.usuarios.dto.UsuarioRequest;
 import com.example.Eminent.usuarios.entity.Usuario;
 import com.example.Eminent.usuarios.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,9 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 
 @RestController
@@ -39,7 +38,7 @@ public class UsuarioController {
      */
     @PostMapping("/usuarios")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UsuarioDTO> crear(@RequestBody Usuario usuario) {
+    public ResponseEntity<UsuarioDTO> crear(@RequestBody UsuarioRequest usuario) {
         return ResponseEntity.status(HttpStatus.CREATED).body(toDTO(service.crear(usuario)));
     }
 
@@ -64,22 +63,12 @@ public class UsuarioController {
     }
 
     /**
-     * Elimina un usuario por su ID. Solo accesible por ADMIN.
-     */
-    @DeleteMapping("/usuarios/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> eliminar(@PathVariable Long id) {
-        service.eliminar(id);
-        return ResponseEntity.ok(Map.of("mensaje", "Usuario eliminado correctamente"));
-    }
-
-    /**
      * Actualiza los datos de un usuario existente. Solo accesible por ADMIN.
      * Si se proporcionan teléfono o contraseña, se validan con las reglas actuales.
      */
     @PutMapping("/usuarios/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UsuarioDTO> editar(@PathVariable Long id, @RequestBody Usuario datos) {
+    public ResponseEntity<UsuarioDTO> editar(@PathVariable Long id, @RequestBody UsuarioRequest datos) {
         return ResponseEntity.ok(toDTO(service.editar(id, datos)));
     }
 
@@ -100,7 +89,7 @@ public class UsuarioController {
         dto.setApellido(u.getApellido());
         dto.setCorreo(u.getCorreo());
         dto.setTelefono(u.getTelefono());
-        dto.setRol(u.getRol().name());
+        dto.setRoles(u.getRoles().stream().map(r -> r.getNombre().name()).sorted().toList());
         dto.setEstado(u.getEstado().name());
         dto.setFechaCreacion(u.getFechaCreacion());
         return dto;

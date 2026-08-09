@@ -1,5 +1,6 @@
 package com.example.Eminent.dashboard.controller;
 
+import com.example.Eminent.auth.RolActivoResolver;
 import com.example.Eminent.dashboard.dto.DashboardDTO;
 import com.example.Eminent.dashboard.service.DashboardService;
 import com.example.Eminent.eventos.entity.Evento;
@@ -21,6 +22,7 @@ public class DashboardController {
 
     @Autowired private DashboardService service;
     @Autowired private UsuarioRepository usuarioRepository;
+    @Autowired private RolActivoResolver rolActivoResolver;
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR') or hasRole('MONITOR')")
@@ -29,10 +31,12 @@ public class DashboardController {
             @RequestParam(required = false) Evento.Modalidad modalidad,
             @RequestParam(required = false) Evento.Estado estado,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaDesde,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaHasta) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaHasta,
+            @RequestHeader(value = RolActivoResolver.HEADER, required = false) String rolActivoHeader) {
 
         Usuario usuario = usuarioActual();
-        return ResponseEntity.ok(service.obtenerResumen(tipo, modalidad, estado, fechaDesde, fechaHasta, usuario));
+        Usuario.Rol rolActivo = rolActivoResolver.resolver(usuario, rolActivoHeader);
+        return ResponseEntity.ok(service.obtenerResumen(tipo, modalidad, estado, fechaDesde, fechaHasta, usuario, rolActivo));
     }
 
     private Usuario usuarioActual() {

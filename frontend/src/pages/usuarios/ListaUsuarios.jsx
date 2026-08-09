@@ -136,9 +136,13 @@ export default function ListaUsuarios() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <Badge variant={u.rol.toLowerCase()}>
-                          {u.rol}
-                        </Badge>
+                        <div className="flex gap-1 flex-wrap">
+                          {u.roles.map((r) => (
+                            <Badge key={r} variant={r.toLowerCase()}>
+                              {r}
+                            </Badge>
+                          ))}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <Badge variant={u.estado === 'ACTIVO' ? 'success' : 'danger'}>

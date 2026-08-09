@@ -15,7 +15,7 @@ export default function FormularioUsuario() {
     apellido: '',
     correo: '',
     contrasena: '',
-    rol: 'OPERADOR',
+    roles: ['OPERADOR'],
     telefono: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,7 +35,7 @@ export default function FormularioUsuario() {
         apellido: data.apellido || '',
         correo: data.correo || '',
         contrasena: '',
-        rol: data.rol || 'OPERADOR',
+        roles: data.roles && data.roles.length > 0 ? data.roles : ['OPERADOR'],
         telefono: data.telefono || ''
       });
     } catch (err) {
@@ -46,8 +46,23 @@ export default function FormularioUsuario() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const toggleRol = (rol) => {
+    setForm((prev) => ({
+      ...prev,
+      roles: prev.roles.includes(rol)
+        ? prev.roles.filter((r) => r !== rol)
+        : [...prev.roles, rol]
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (form.roles.length === 0) {
+      toast.error('El usuario debe tener al menos un rol asignado');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -168,22 +183,26 @@ export default function FormularioUsuario() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Rol en el Sistema</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Shield className="h-4 w-4 text-slate-400" />
-                    </div>
-                    <select
-                      name="rol"
-                      value={form.rol}
-                      onChange={handleChange}
-                      className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white shadow-sm"
-                    >
-                      <option value="OPERADOR">Operador (Gestión de Eventos)</option>
-                      <option value="MONITOR">Monitor (Control de Asistencia)</option>
-                      <option value="ADMIN">Administrador (Acceso Total)</option>
-                    </select>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <Shield className="h-4 w-4 text-slate-400 inline mr-1" /> Roles en el Sistema
+                  </label>
+                  <div className="flex flex-wrap gap-4">
+                    {[
+                      { valor: 'OPERADOR', etiqueta: 'Operador (Gestión de Eventos)' },
+                      { valor: 'MONITOR', etiqueta: 'Monitor (Control de Asistencia)' },
+                      { valor: 'ADMIN', etiqueta: 'Administrador (Acceso Total)' },
+                    ].map(({ valor, etiqueta }) => (
+                      <label key={valor} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={form.roles.includes(valor)}
+                          onChange={() => toggleRol(valor)}
+                          className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        {etiqueta}
+                      </label>
+                    ))}
                   </div>
                 </div>
 

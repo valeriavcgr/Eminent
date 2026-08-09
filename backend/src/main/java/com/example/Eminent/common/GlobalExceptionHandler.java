@@ -1,5 +1,6 @@
 package com.example.Eminent.common;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -64,6 +65,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(Map.of(
                 "mensaje", ex.getMessage(),
                 "codigo", 400,
+                "timestamp", LocalDateTime.now()));
+    }
+
+    /**
+     * Maneja violaciones de integridad referencial (por ejemplo, intentar eliminar un usuario
+     * que sigue siendo referenciado por eventos que creó o asistencias que registró).
+     * Retorna 409 Conflict con un mensaje claro en vez de dejar que la excepción de base de
+     * datos se propague sin manejar.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<?> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "mensaje", "No se puede completar la operación porque el registro tiene datos asociados (eventos, asistencias u otros) que dependen de él",
+                "codigo", 409,
                 "timestamp", LocalDateTime.now()));
     }
 }

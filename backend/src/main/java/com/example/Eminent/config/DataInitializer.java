@@ -12,9 +12,12 @@ import com.example.Eminent.participacion.entity.Participante;
 import com.example.Eminent.participacion.repository.InscripcionRepository;
 import com.example.Eminent.participacion.repository.ParticipanteRepository;
 import com.example.Eminent.participacion.service.QrService;
+import com.example.Eminent.usuarios.entity.Rol;
 import com.example.Eminent.usuarios.entity.Usuario;
+import com.example.Eminent.usuarios.repository.RolRepository;
 import com.example.Eminent.usuarios.repository.UsuarioRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +30,8 @@ import java.util.List;
 public class DataInitializer implements CommandLineRunner {
 
     private final UsuarioRepository usuarioRepository;
+    private final RolRepository rolRepository;
+    private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
     private final EventoRepository eventoRepository;
     private final EventoMonitorRepository eventoMonitorRepository;
@@ -43,12 +48,15 @@ public class DataInitializer implements CommandLineRunner {
             "Gómez", "Rodríguez", "Pérez", "Martínez", "López", "Torres", "García", "Ramírez", "Vargas", "Hernández"
     };
 
-    public DataInitializer(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder,
+    public DataInitializer(UsuarioRepository usuarioRepository, RolRepository rolRepository, JdbcTemplate jdbcTemplate,
+                           PasswordEncoder passwordEncoder,
                            EventoRepository eventoRepository, EventoMonitorRepository eventoMonitorRepository,
                            ParticipanteRepository participanteRepository, InscripcionRepository inscripcionRepository,
                            AsistenciaRepository asistenciaRepository, QrService qrService,
                            CertificacionService certificacionService) {
         this.usuarioRepository = usuarioRepository;
+        this.rolRepository = rolRepository;
+        this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
         this.eventoRepository = eventoRepository;
         this.eventoMonitorRepository = eventoMonitorRepository;
@@ -62,37 +70,113 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) throws Exception {
+        relajarColumnaRolLegada();
+        repararForeignKeyAuditoriaUsuario();
+        sembrarCatalogoRoles();
+        migrarRolUnicoAUsuarioRoles();
         sembrarUsuarios();
         sembrarEventosYParticipantes();
     }
 
-    private void sembrarUsuarios() {
-        crearOActualizarUsuarioSeed("admin@eminent.com", "Admin1234", Usuario.Rol.ADMIN, "+573001234567");
-        crearOActualizarUsuarioSeed("admin2@eminent.com", "Admin1234", Usuario.Rol.ADMIN, "+573001234568");
-
-        crearOActualizarUsuarioSeed("operador@eminent.com", "Operador1", Usuario.Rol.OPERADOR, "+573002345678");
-        crearOActualizarUsuarioSeed("operador2@eminent.com", "Operador1", Usuario.Rol.OPERADOR, "+573002345679");
-        crearOActualizarUsuarioSeed("operador3@eminent.com", "Operador1", Usuario.Rol.OPERADOR, "+573002345680");
-
-        crearOActualizarUsuarioSeed("monitor@eminent.com", "Monitor12", Usuario.Rol.MONITOR, "+573003456789");
-        crearOActualizarUsuarioSeed("monitor2@eminent.com", "Monitor12", Usuario.Rol.MONITOR, "+573003456790");
-        crearOActualizarUsuarioSeed("monitor3@eminent.com", "Monitor12", Usuario.Rol.MONITOR, "+573003456791");
-        crearOActualizarUsuarioSeed("monitor4@eminent.com", "Monitor12", Usuario.Rol.MONITOR, "+573003456792");
+    /**
+     * `ddl-auto=update` nunca revierte un NOT NULL existente en una columna, así que la
+     * columna legada `usuario.rol` sigue exigiendo valor aunque la entidad ya la declare
+     * opcional. Se relaja explícitamente por SQL (operación idempotente en Postgres: si ya
+     * es nullable, no hace nada) para que crear usuarios nuevos no falle por esa columna.
+     */
+    private void relajarColumnaRolLegada() {
+        jdbcTemplate.execute("ALTER TABLE usuario ALTER COLUMN rol DROP NOT NULL");
     }
 
-    private void crearOActualizarUsuarioSeed(String correo, String contrasena, Usuario.Rol rol, String telefono) {
+    /**
+     * La FK de `auditoria.usuario_id` hacia `usuario` se creó originalmente sin `ON DELETE
+     * SET NULL`, por lo que eliminar cualquier usuario con historial de auditoría (prácticamente
+     * cualquiera, ya que hasta iniciar sesión genera un registro) fallaba con una violación de
+     * integridad referencial. La entidad ya trata `usuario` como opcional (cae a "Sistema"), así
+     * que se corrige la restricción para que coincida con esa intención. Idempotente: si la FK ya
+     * tiene `ON DELETE SET NULL`, no hace nada.
+     */
+    private void repararForeignKeyAuditoriaUsuario() {
+        jdbcTemplate.execute("""
+            DO $$
+            DECLARE
+                nombre_restriccion text;
+                regla_borrado text;
+            BEGIN
+                SELECT rc.constraint_name, rc.delete_rule INTO nombre_restriccion, regla_borrado
+                FROM information_schema.referential_constraints rc
+                JOIN information_schema.key_column_usage kcu ON kcu.constraint_name = rc.constraint_name
+                WHERE rc.constraint_schema = 'public'
+                  AND kcu.table_name = 'auditoria'
+                  AND kcu.column_name = 'usuario_id'
+                LIMIT 1;
+
+                IF nombre_restriccion IS NOT NULL AND regla_borrado <> 'SET NULL' THEN
+                    EXECUTE 'ALTER TABLE auditoria DROP CONSTRAINT ' || quote_ident(nombre_restriccion);
+                    EXECUTE 'ALTER TABLE auditoria ADD CONSTRAINT fk_auditoria_usuario ' ||
+                            'FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE SET NULL';
+                END IF;
+            END $$;
+            """);
+    }
+
+    /** Puebla el catálogo de roles (tabla `roles`) con los tres valores fijos del sistema, si no existen. */
+    private void sembrarCatalogoRoles() {
+        for (Usuario.Rol nombre : Usuario.Rol.values()) {
+            rolRepository.findByNombre(nombre).orElseGet(() -> rolRepository.save(new Rol(nombre)));
+        }
+    }
+
+    /**
+     * Migración idempotente: copia el valor de la columna legada `usuario.rol` (leída vía
+     * {@code rolLegado}) hacia la nueva tabla `usuario_roles` para cualquier usuario que aún
+     * no tenga roles asignados. No hace nada en arranques posteriores una vez migrado.
+     */
+    private void migrarRolUnicoAUsuarioRoles() {
+        List<Usuario> usuarios = usuarioRepository.findAll();
+        int migrados = 0;
+        for (Usuario usuario : usuarios) {
+            if (!usuario.getRoles().isEmpty() || usuario.getRolLegado() == null) continue;
+            Rol rolEntidad = rolRepository.findByNombre(usuario.getRolLegado())
+                    .orElseThrow(() -> new IllegalStateException("Catálogo de roles incompleto"));
+            usuario.getRoles().add(rolEntidad);
+            usuarioRepository.save(usuario);
+            migrados++;
+        }
+        if (migrados > 0) {
+            System.out.println("[DataInitializer] Migrados " + migrados + " usuario(s) de rol único a roles múltiples.");
+        }
+    }
+
+    private void sembrarUsuarios() {
+        crearOActualizarUsuarioSeed("admin@eminent.com", "Admin1234", "+573001234567", Usuario.Rol.ADMIN);
+        crearOActualizarUsuarioSeed("admin2@eminent.com", "Admin1234", "+573001234568", Usuario.Rol.ADMIN);
+
+        crearOActualizarUsuarioSeed("operador@eminent.com", "Operador1", "+573002345678", Usuario.Rol.OPERADOR);
+        crearOActualizarUsuarioSeed("operador2@eminent.com", "Operador1", "+573002345679", Usuario.Rol.OPERADOR);
+        crearOActualizarUsuarioSeed("operador3@eminent.com", "Operador1", "+573002345680", Usuario.Rol.OPERADOR);
+
+        crearOActualizarUsuarioSeed("monitor@eminent.com", "Monitor12", "+573003456789", Usuario.Rol.MONITOR);
+        crearOActualizarUsuarioSeed("monitor2@eminent.com", "Monitor12", "+573003456790", Usuario.Rol.MONITOR);
+        crearOActualizarUsuarioSeed("monitor3@eminent.com", "Monitor12", "+573003456791", Usuario.Rol.MONITOR);
+        crearOActualizarUsuarioSeed("monitor4@eminent.com", "Monitor12", "+573003456792", Usuario.Rol.MONITOR);
+    }
+
+    private void crearOActualizarUsuarioSeed(String correo, String contrasena, String telefono, Usuario.Rol... roles) {
         Usuario usuario = usuarioRepository.findByCorreo(correo).orElse(null);
         if (usuario == null) {
             usuario = new Usuario();
-            usuario.setNombre(rol.name());
+            usuario.setNombre(roles[0].name());
             usuario.setApellido("User");
             usuario.setCorreo(correo);
-            usuario.setRol(rol);
+            for (Usuario.Rol rol : roles) {
+                usuario.getRoles().add(rolRepository.findByNombre(rol).orElseThrow());
+            }
             usuario.setTelefono(telefono);
             usuario.setEstado(Usuario.Estado.ACTIVO);
             usuario.setContrasena(passwordEncoder.encode(contrasena));
             usuarioRepository.save(usuario);
-            System.out.println("[DataInitializer] Usuario creado: " + correo + " (" + rol + ")");
+            System.out.println("[DataInitializer] Usuario creado: " + correo + " (" + List.of(roles) + ")");
         } else if (!passwordEncoder.matches(contrasena, usuario.getContrasena())) {
             usuario.setContrasena(passwordEncoder.encode(contrasena));
             usuarioRepository.save(usuario);

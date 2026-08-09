@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 
 export default function ListaAsistencia() {
   const { id } = useParams();
-  const { rol } = useAuth();
+  const { rolActivo } = useAuth();
   const [datos, setDatos] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
@@ -49,7 +49,7 @@ export default function ListaAsistencia() {
     }
   };
 
-  const isMonitor = rol === 'MONITOR';
+  const isMonitor = rolActivo === 'MONITOR';
   const themeColor = isMonitor ? 'orange' : 'emerald';
 
   if (isLoading && !datos) {

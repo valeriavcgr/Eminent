@@ -3,7 +3,10 @@ package com.example.Eminent.usuarios.service;
 import com.example.Eminent.auditoria.entity.Auditoria;
 import com.example.Eminent.auditoria.service.AuditoriaService;
 import com.example.Eminent.auth.JwtUtil;
+import com.example.Eminent.usuarios.dto.UsuarioRequest;
+import com.example.Eminent.usuarios.entity.Rol;
 import com.example.Eminent.usuarios.entity.Usuario;
+import com.example.Eminent.usuarios.repository.RolRepository;
 import com.example.Eminent.usuarios.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -14,8 +17,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
-import java.util.regex.Pattern;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 @Service
@@ -25,59 +29,85 @@ public class UsuarioService {
     private static final Pattern PATRON_CONTRASENA = Pattern.compile("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}$");
 
     @Autowired private UsuarioRepository repo;
+    @Autowired private RolRepository rolRepo;
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private AuthenticationManager authManager;
     @Autowired private JwtUtil jwtUtil;
     @Autowired private AuditoriaService auditoriaService;
 
+    /** Resuelve una lista de nombres de rol (texto) a las entidades Rol del catálogo. */
+    private Set<Rol> resolverRolesDesdeNombres(List<String> nombres) {
+        Set<Rol> resultado = new HashSet<>();
+        for (String nombre : nombres) {
+            Usuario.Rol valor;
+            try {
+                valor = Usuario.Rol.valueOf(nombre.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Rol inválido: " + nombre);
+            }
+            resultado.add(rolRepo.findByNombre(valor).orElseThrow());
+        }
+        return resultado;
+    }
+
     /**
      * Crea un nuevo usuario validando todos los campos requeridos,
-     * incluyendo formato de teléfono y fortaleza de contraseña.
+     * incluyendo formato de teléfono, fortaleza de contraseña y al menos un rol.
      */
-    public Usuario crear(Usuario nuevo) {
-        if (nuevo.getNombre() == null || nuevo.getNombre().isBlank() ||
-                nuevo.getApellido() == null || nuevo.getApellido().isBlank() ||
-                nuevo.getCorreo() == null || nuevo.getCorreo().isBlank() ||
-                nuevo.getContrasena() == null || nuevo.getContrasena().isBlank() ||
-                nuevo.getRol() == null) {
-            throw new IllegalArgumentException("Todos los campos son obligatorios");
+    public Usuario crear(UsuarioRequest datos) {
+        if (datos.getNombre() == null || datos.getNombre().isBlank() ||
+                datos.getApellido() == null || datos.getApellido().isBlank() ||
+                datos.getCorreo() == null || datos.getCorreo().isBlank() ||
+                datos.getContrasena() == null || datos.getContrasena().isBlank() ||
+                datos.getRoles() == null || datos.getRoles().isEmpty()) {
+            throw new IllegalArgumentException("Todos los campos son obligatorios, incluyendo al menos un rol");
         }
 
-        if (nuevo.getRol() == Usuario.Rol.ADMIN) {
-            throw new IllegalArgumentException("Solo se pueden crear usuarios con rol MONITOR u OPERADOR");
-        }
-
-        if (nuevo.getTelefono() != null && !nuevo.getTelefono().isBlank() &&
-                !PATRON_TELEFONO.matcher(nuevo.getTelefono()).matches()) {
+        if (datos.getTelefono() != null && !datos.getTelefono().isBlank() &&
+                !PATRON_TELEFONO.matcher(datos.getTelefono()).matches()) {
             throw new IllegalArgumentException("Formato de teléfono inválido. Use +573001234567 o 3001234567");
         }
 
-        if (!PATRON_CONTRASENA.matcher(nuevo.getContrasena()).matches()) {
+        if (!PATRON_CONTRASENA.matcher(datos.getContrasena()).matches()) {
             throw new IllegalArgumentException("La contraseña debe tener al menos 8 caracteres, una letra mayúscula, una minúscula y un dígito");
         }
 
-        if (repo.existsByCorreo(nuevo.getCorreo())) {
+        if (repo.existsByCorreo(datos.getCorreo())) {
             throw new IllegalArgumentException("El correo electrónico ya se encuentra registrado");
         }
 
-        nuevo.setContrasena(passwordEncoder.encode(nuevo.getContrasena()));
+        Usuario nuevo = new Usuario();
+        nuevo.setNombre(datos.getNombre());
+        nuevo.setApellido(datos.getApellido());
+        nuevo.setCorreo(datos.getCorreo());
+        nuevo.setTelefono(datos.getTelefono());
+        nuevo.setContrasena(passwordEncoder.encode(datos.getContrasena()));
         nuevo.setEstado(Usuario.Estado.ACTIVO);
+        nuevo.getRoles().addAll(resolverRolesDesdeNombres(datos.getRoles()));
+
         Usuario guardado = repo.save(nuevo);
 
         auditoriaService.registrar(guardado, Auditoria.Accion.CREAR, Auditoria.TipoAfectado.USUARIO,
                 guardado.getId(),
-                "Creación de usuario nuevo con rol " + guardado.getRol() + " y correo " + guardado.getCorreo(),
+                "Creación de usuario nuevo con roles " + datos.getRoles() + " y correo " + guardado.getCorreo(),
                 null);
 
         return guardado;
     }
 
     /**
-     * Lista usuarios paginados, filtrando opcionalmente por rol.
+     * Lista usuarios paginados, filtrando opcionalmente por rol (usuarios que tengan ese rol
+     * entre los suyos).
      */
     public Page<Usuario> listar(String rol, Pageable pageable) {
         if (rol != null && !rol.isBlank()) {
-            return repo.findByRol(Usuario.Rol.valueOf(rol.toUpperCase()), pageable);
+            Usuario.Rol nombre;
+            try {
+                nombre = Usuario.Rol.valueOf(rol.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Rol inválido: " + rol);
+            }
+            return repo.findByRolesNombre(nombre, pageable);
         }
         return repo.findAll(pageable);
     }
@@ -91,35 +121,13 @@ public class UsuarioService {
     }
 
     /**
-     * Elimina permanentemente un usuario del sistema.
-     */
-    public void eliminar(Long id) {
-        Usuario existente = repo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
-
-        if (existente.getRol() == Usuario.Rol.ADMIN) {
-            throw new IllegalArgumentException("No se puede eliminar un usuario Administrador");
-        }
-
-        repo.deleteById(id);
-
-        auditoriaService.registrar(existente, Auditoria.Accion.DESACTIVAR, Auditoria.TipoAfectado.USUARIO,
-                existente.getId(),
-                "Eliminación del usuario " + existente.getCorreo(),
-                null);
-    }
-
-    /**
      * Edita los datos de un usuario existente con validación de teléfono y contraseña opcional.
+     * Un ADMIN puede asignar o quitar cualquier rol (incluido ADMIN) a cualquier usuario,
+     * incluso a sí mismo — esta acción ya está reservada a administradores vía @PreAuthorize.
      */
-    public Usuario editar(Long id, Usuario datos) {
+    public Usuario editar(Long id, UsuarioRequest datos) {
         Usuario existente = repo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
-
-        if (existente.getRol() == Usuario.Rol.ADMIN && datos.getRol() != null
-                && datos.getRol() != existente.getRol()) {
-            throw new IllegalArgumentException("No se puede editar el rol de un usuario Administrador");
-        }
 
         if (datos.getCorreo() != null && !datos.getCorreo().equals(existente.getCorreo())
                 && repo.existsByCorreo(datos.getCorreo())) {
@@ -135,8 +143,12 @@ public class UsuarioService {
             }
             existente.setTelefono(datos.getTelefono());
         }
-        if (datos.getRol() != null && existente.getRol() != Usuario.Rol.ADMIN) {
-            existente.setRol(datos.getRol());
+        if (datos.getRoles() != null) {
+            if (datos.getRoles().isEmpty()) {
+                throw new IllegalArgumentException("El usuario debe tener al menos un rol asignado");
+            }
+            existente.getRoles().clear();
+            existente.getRoles().addAll(resolverRolesDesdeNombres(datos.getRoles()));
         }
 
         if (datos.getContrasena() != null && !datos.getContrasena().isBlank()) {
@@ -189,6 +201,7 @@ public class UsuarioService {
         auditoriaService.registrar(usuario, Auditoria.Accion.LOGIN_EXITOSO, Auditoria.TipoAfectado.USUARIO,
                 usuario.getId(), "Inicio de sesión exitoso", null);
 
-        return jwtUtil.generarToken(usuario.getCorreo(), usuario.getRol().name());
+        return jwtUtil.generarToken(usuario.getCorreo(),
+                usuario.getRoles().stream().map(r -> r.getNombre().name()).toList());
     }
 }

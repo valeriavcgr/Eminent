@@ -13,6 +13,8 @@ export default function Login() {
   const { login: guardarSesion } = useAuth();
   const navigate = useNavigate();
 
+  const JERARQUIA = ['ADMIN', 'OPERADOR', 'MONITOR'];
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -21,12 +23,16 @@ export default function Login() {
     try {
       const token = await login(correo, contrasena);
       const payload = JSON.parse(atob(token.split('.')[1]));
-      guardarSesion(token, payload.rol);
-      if (payload.rol === 'MONITOR') {
-        navigate('/dashboard');
-      } else {
-        navigate('/dashboard');
+      const roles = payload.roles || [];
+      const rolActivoInicial = JERARQUIA.find((r) => roles.includes(r));
+
+      if (!rolActivoInicial) {
+        setError('Tu usuario no tiene roles asignados. Contacta a un administrador.');
+        return;
       }
+
+      guardarSesion(token, roles, rolActivoInicial);
+      navigate('/dashboard');
     } catch (err) {
       setError('Correo o contraseña incorrectos. Por favor, verifica tus datos.');
     } finally {

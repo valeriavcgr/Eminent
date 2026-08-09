@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 
 @Entity
@@ -43,10 +45,35 @@ public class Usuario {
         ADMIN, OPERADOR, MONITOR
     }
 
-    /** Rol asignado al usuario. No puede ser nulo. */
+    /**
+     * Columna legada de un único rol por usuario, previa a la migración a roles múltiples.
+     * Se conserva solo para que {@code DataInitializer} pueda leerla y migrar su valor a
+     * {@link #roles} en el arranque; ya no se usa en ninguna lógica de negocio.
+     */
+    @Deprecated
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Rol rol;
+    @Column(name = "rol", nullable = true)
+    private Rol rolLegado;
+
+    /** Roles asignados al usuario (relación muchos-a-muchos vía tabla usuario_roles). */
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "usuario_roles",
+            joinColumns = @JoinColumn(name = "usuario_id"),
+            inverseJoinColumns = @JoinColumn(name = "rol_id"))
+    private Set<com.example.Eminent.usuarios.entity.Rol> roles = new HashSet<>();
+
+    /** Indica si el usuario tiene el rol dado entre sus roles asignados. */
+    public boolean tieneRol(Rol nombre) {
+        return roles.stream().anyMatch(r -> r.getNombre() == nombre);
+    }
+
+    /** Rol de mayor rango entre los asignados al usuario, según el orden ADMIN &gt; OPERADOR &gt; MONITOR. Null si no tiene roles. */
+    public Rol rolDeMayorRango() {
+        for (Rol candidato : new Rol[]{Rol.ADMIN, Rol.OPERADOR, Rol.MONITOR}) {
+            if (tieneRol(candidato)) return candidato;
+        }
+        return null;
+    }
 
     /** Estados posibles del usuario: ACTIVO (puede iniciar sesión) o INACTIVO (bloqueado). */
     public enum Estado {

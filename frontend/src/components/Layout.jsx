@@ -1,20 +1,21 @@
 import { useState } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { 
-  Users, 
-  Calendar, 
-  History, 
-  ShieldAlert, 
-  LogOut, 
-  Menu, 
+import { colorFondoRol, colorTextoRol } from '../utils/rolColores';
+import {
+  Users,
+  Calendar,
+  History,
+  ShieldAlert,
+  LogOut,
+  Menu,
   X,
   ChevronRight,
   LayoutDashboard
 } from 'lucide-react';
 
 export default function Layout() {
-  const { rol, logout } = useAuth();
+  const { roles, rolActivo, cambiarRolActivo, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -25,42 +26,26 @@ export default function Layout() {
   };
 
   const menuItems = [
-    ...(rol === 'ADMIN' ? [
+    ...(rolActivo === 'ADMIN' ? [
       { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
       { name: 'Usuarios', path: '/usuarios', icon: Users },
       { name: 'Eventos', path: '/eventos', icon: Calendar },
       { name: 'Historial', path: '/participacion/historial', icon: History },
       { name: 'Auditoría', path: '/auditoria', icon: ShieldAlert },
     ] : []),
-    ...(rol === 'OPERADOR' ? [
+    ...(rolActivo === 'OPERADOR' ? [
       { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
       { name: 'Eventos', path: '/eventos', icon: Calendar },
       { name: 'Historial', path: '/participacion/historial', icon: History },
     ] : []),
-    ...(rol === 'MONITOR' ? [
+    ...(rolActivo === 'MONITOR' ? [
       { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
       { name: 'Mis Eventos', path: '/eventos/mis-eventos', icon: Calendar },
     ] : []),
   ];
 
-  // Determinar color de acento según rol
-  const getRoleColor = () => {
-    switch (rol) {
-      case 'ADMIN': return 'bg-blue-600';
-      case 'OPERADOR': return 'bg-emerald-600';
-      case 'MONITOR': return 'bg-orange-500';
-      default: return 'bg-gray-800';
-    }
-  };
-
-  const getRoleTextColor = () => {
-    switch (rol) {
-      case 'ADMIN': return 'text-blue-600';
-      case 'OPERADOR': return 'text-emerald-600';
-      case 'MONITOR': return 'text-orange-500';
-      default: return 'text-gray-800';
-    }
-  };
+  const getRoleColor = () => colorFondoRol(rolActivo);
+  const getRoleTextColor = () => colorTextoRol(rolActivo);
 
   return (
     <div className="min-h-screen bg-[#f8f9ff] flex font-sans text-slate-800">
@@ -103,12 +88,30 @@ export default function Layout() {
         </div>
 
         <div className="absolute bottom-0 w-full p-4 border-t border-slate-800 flex flex-col gap-4">
-          <div className="px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${getRoleColor()}`}></div>
-              <p className="text-sm font-medium text-white">{rol}</p>
+          {roles.length > 1 ? (
+            <div className="px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+              <label className="block text-xs font-medium text-slate-400 mb-1">Ver como</label>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full shrink-0 ${getRoleColor()}`}></div>
+                <select
+                  value={rolActivo}
+                  onChange={(e) => cambiarRolActivo(e.target.value)}
+                  className="w-full bg-transparent text-sm font-medium text-white focus:outline-none cursor-pointer"
+                >
+                  {roles.map((r) => (
+                    <option key={r} value={r} className="bg-slate-800 text-white">{r}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${getRoleColor()}`}></div>
+                <p className="text-sm font-medium text-white">{rolActivo}</p>
+              </div>
+            </div>
+          )}
           <button
             onClick={handleLogout}
             className="flex items-center w-full px-3 py-2.5 text-sm font-medium text-slate-400 rounded-lg hover:bg-slate-800 hover:text-white transition-colors"
@@ -140,10 +143,10 @@ export default function Layout() {
 
         <div className="flex items-center gap-3">
           <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm ${getRoleColor()}`}>
-            {rol?.[0]}
+            {rolActivo?.[0]}
           </div>
           <div className="hidden sm:block">
-            <p className="text-sm font-semibold text-slate-800 leading-tight">{rol}</p>
+            <p className="text-sm font-semibold text-slate-800 leading-tight">{rolActivo}</p>
           </div>
         </div>
       </header>

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.List;
 
 @Component
 public class JwtUtil {
@@ -18,10 +19,10 @@ public class JwtUtil {
     /** Tiempo de expiración del token en milisegundos (1 hora). */
     private final long EXPIRATION_MS = 3600000;
 
-    public String generarToken(String correo, String rol) {
+    public String generarToken(String correo, List<String> roles) {
         return Jwts.builder()
                 .setSubject(correo)
-                .claim("rol", rol)
+                .claim("roles", roles)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_MS))
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -38,9 +39,10 @@ public class JwtUtil {
         return validarYExtraer(token).getSubject();
     }
 
-    /** Extrae el rol del usuario almacenado en el claim "rol" del token JWT. */
-    public String extraerRol(String token) {
-        return validarYExtraer(token).get("rol", String.class);
+    /** Extrae la lista de roles del usuario almacenada en el claim "roles" del token JWT. */
+    @SuppressWarnings("unchecked")
+    public List<String> extraerRoles(String token) {
+        return validarYExtraer(token).get("roles", List.class);
     }
 
     /** Verifica si el token JWT es válido (no expirado, firma correcta). */

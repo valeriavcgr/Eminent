@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import java.time.LocalDateTime;
 import com.example.Eminent.usuarios.entity.Usuario;
 
@@ -18,10 +20,12 @@ public class Auditoria {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Usuario que realizó la acción. Puede ser null para acciones automáticas del sistema.
-     *  Se resuelve con fetch LAZY. */
+    /** Usuario que realizó la acción. Puede ser null para acciones automáticas del sistema,
+     *  o para acciones de un usuario que ya fue eliminado (el registro de auditoría se conserva
+     *  y pasa a atribuirse a "Sistema"). Se resuelve con fetch LAZY. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = true)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     private Usuario usuario;
 
     /** Tipos de acciones que se registran en la auditoría */

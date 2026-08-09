@@ -3,6 +3,7 @@ package com.example.Eminent.usuarios.dto;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * DTO para transferir datos de usuario entre capas sin exponer la entidad completa.
@@ -23,8 +24,8 @@ public class UsuarioDTO {
     private String correo;
     /** Número de teléfono del usuario. */
     private String telefono;
-    /** Rol asignado del usuario como texto (ADMIN, OPERADOR, MONITOR). */
-    private String rol;
+    /** Roles asignados al usuario, como texto (ADMIN, OPERADOR, MONITOR). */
+    private List<String> roles;
     /** Estado actual del usuario como texto (ACTIVO o INACTIVO). */
     private String estado;
     /** Fecha y hora de creación del registro. */
