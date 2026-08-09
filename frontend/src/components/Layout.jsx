@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { colorFondoRol, colorTextoRol } from '../utils/rolColores';
+import { Modal } from './ui/Modal';
+import { Button } from './ui/Button';
 import {
   Users,
   Calendar,
@@ -10,6 +12,7 @@ import {
   LogOut,
   Menu,
   X,
+  AlertTriangle,
   ChevronRight,
   LayoutDashboard
 } from 'lucide-react';
@@ -19,6 +22,7 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -113,7 +117,7 @@ export default function Layout() {
             </div>
           )}
           <button
-            onClick={handleLogout}
+            onClick={() => setLogoutModalOpen(true)}
             className="flex items-center w-full px-3 py-2.5 text-sm font-medium text-slate-400 rounded-lg hover:bg-slate-800 hover:text-white transition-colors"
           >
             <LogOut className="w-5 h-5 mr-3" />
@@ -121,6 +125,29 @@ export default function Layout() {
           </button>
         </div>
       </aside>
+
+      <Modal
+        isOpen={logoutModalOpen}
+        onClose={() => setLogoutModalOpen(false)}
+        title="Cerrar Sesión"
+      >
+        <div className="flex flex-col items-center text-center space-y-4">
+          <div className="bg-red-100 p-3 rounded-full text-red-600">
+            <AlertTriangle className="w-8 h-8" />
+          </div>
+          <p className="text-slate-700">
+            ¿Estás seguro de que deseas cerrar sesión?
+          </p>
+          <div className="flex w-full gap-3 mt-4">
+            <Button variant="secondary" className="flex-1" onClick={() => setLogoutModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={handleLogout}>
+              Sí, Cerrar Sesión
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">

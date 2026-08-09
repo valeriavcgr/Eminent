@@ -21,6 +21,7 @@ import VerificarCertificado from './pages/certificacion/VerificarCertificado';
 import ConsultarInscripcion from './pages/participacion/ConsultarInscripcion';
 import Dashboard from './pages/dashboard/Dashboard';
 import VerificarCertificadoInterno from './pages/certificacion/VerificarCertificadoInterno';
+import SessionWatcher from './components/SessionWatcher';
 
 import { Toaster } from 'sonner';
 
@@ -28,6 +29,7 @@ function App() {
   return (
     <AuthProvider>
       <Toaster position="top-right" richColors />
+      <SessionWatcher />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPublica />} />

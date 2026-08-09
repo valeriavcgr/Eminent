@@ -1,4 +1,5 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 const AuthContext = createContext();
 
@@ -32,6 +33,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('token', nuevoToken);
     localStorage.setItem('roles', JSON.stringify(nuevosRoles));
     localStorage.setItem('rolActivo', rolActivoInicial);
+    localStorage.setItem('ultimaActividad', Date.now().toString());
     setToken(nuevoToken);
     setRoles(nuevosRoles);
     setRolActivoState(rolActivoInicial);
@@ -41,6 +43,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token');
     localStorage.removeItem('roles');
     localStorage.removeItem('rolActivo');
+    localStorage.removeItem('ultimaActividad');
     setToken(null);
     setRoles([]);
     setRolActivoState(null);
@@ -51,6 +54,22 @@ export function AuthProvider({ children }) {
     localStorage.setItem('rolActivo', nuevoRol);
     setRolActivoState(nuevoRol);
   };
+
+  // Si la sesión se cierra en otra pestaña (logout manual, por inactividad, etc.),
+  // esta pestaña lo detecta vía el evento storage y también limpia su sesión.
+  useEffect(() => {
+    function handleStorageChange(event) {
+      if (event.key === 'token' && event.newValue === null) {
+        setToken(null);
+        setRoles([]);
+        setRolActivoState(null);
+        toast.info('Tu sesión se cerró en otra pestaña');
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ token, roles, rolActivo, login, logout, cambiarRolActivo }}>
