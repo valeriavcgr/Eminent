@@ -19,7 +19,11 @@ import {
   AlertTriangle,
   UserPlus,
   Star,
-  MessageCircle
+  MessageCircle,
+  ListFilter,
+  ChevronDown,
+  ChevronUp,
+  X
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -32,6 +36,8 @@ import Pagination from '../../components/Pagination';
 export default function ListarEvento() {
   const [eventos, setEventos] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filtros, setFiltros] = useState({ tipo: '', modalidad: '', estado: '', fechaDesde: '', fechaHasta: '' });
+  const [filtrosVisibles, setFiltrosVisibles] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [paginaActual, setPaginaActual] = useState(1);
   const FILAS_POR_PAGINA = 10;
@@ -55,16 +61,18 @@ export default function ListarEvento() {
 
   useEffect(() => {
     cargarEventos();
-  }, []);
+  }, [filtros]);
 
   useEffect(() => {
     setPaginaActual(1);
-  }, [searchTerm]);
+  }, [searchTerm, filtros]);
 
   const cargarEventos = async () => {
     try {
       setIsLoading(true);
-      const datos = await listarEventos();
+      const params = {};
+      Object.entries(filtros).forEach(([k, v]) => { if (v) params[k] = v; });
+      const datos = await listarEventos(params);
       setEventos(datos || []);
     } catch (error) {
       toast.error('Error al cargar la lista de eventos');
@@ -72,6 +80,10 @@ export default function ListarEvento() {
       setIsLoading(false);
     }
   };
+
+  const handleFiltro = (campo, valor) => setFiltros({ ...filtros, [campo]: valor });
+  const limpiarFiltros = () => setFiltros({ tipo: '', modalidad: '', estado: '', fechaDesde: '', fechaHasta: '' });
+  const hayFiltrosActivos = Object.values(filtros).some((v) => v);
 
   const openCancelModal = (evento) => {
     setEventoToCancel(evento);
@@ -178,9 +190,108 @@ export default function ListarEvento() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Gestión de Eventos</h1>
           <p className="text-sm text-slate-500 mt-1">Crea y administra talleres, capacitaciones y torneos</p>
         </div>
-        <Button onClick={() => navigate('/eventos/nuevo')} icon={Plus} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-          Nuevo Evento
-        </Button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setFiltrosVisibles(!filtrosVisibles)}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg border transition-all ${
+              filtrosVisibles
+                ? 'bg-slate-900 text-white border-slate-900'
+                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            <ListFilter className="w-4 h-4" />
+            Filtros
+            {filtrosVisibles ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+          <Button onClick={() => navigate('/eventos/nuevo')} icon={Plus} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            Nuevo Evento
+          </Button>
+        </div>
+      </div>
+
+      <div
+        className={`transition-all duration-300 ease-in-out overflow-hidden ${
+          filtrosVisibles ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'
+        }`}
+      >
+        <Card className="border border-slate-200/80 shadow-md">
+          <CardHeader className="bg-slate-50/50 flex flex-row items-center justify-between py-3">
+            <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-700">
+              Filtros Avanzados
+            </CardTitle>
+            {hayFiltrosActivos && (
+              <button
+                onClick={limpiarFiltros}
+                className="flex items-center gap-1.5 text-xs font-semibold text-rose-500 hover:text-rose-700 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" /> Limpiar filtros
+              </button>
+            )}
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 py-4 bg-white">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-slate-500">Tipo de Evento</label>
+              <select
+                value={filtros.tipo}
+                onChange={(e) => handleFiltro('tipo', e.target.value)}
+                className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow"
+              >
+                <option value="">Todos los tipos</option>
+                <option value="TALLER">Taller</option>
+                <option value="CAPACITACION">Capacitación</option>
+                <option value="TORNEO">Torneo</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-slate-500">Modalidad</label>
+              <select
+                value={filtros.modalidad}
+                onChange={(e) => handleFiltro('modalidad', e.target.value)}
+                className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow"
+              >
+                <option value="">Todas las modalidades</option>
+                <option value="PRESENCIAL">Presencial</option>
+                <option value="VIRTUAL">Virtual</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-slate-500">Estado del Evento</label>
+              <select
+                value={filtros.estado}
+                onChange={(e) => handleFiltro('estado', e.target.value)}
+                className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow"
+              >
+                <option value="">Todos los estados</option>
+                <option value="PROGRAMADO">Programado</option>
+                <option value="EN_CURSO">En curso</option>
+                <option value="FINALIZADO">Finalizado</option>
+                <option value="CANCELADO">Cancelado</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-slate-500">Desde</label>
+              <input
+                type="date"
+                value={filtros.fechaDesde ? filtros.fechaDesde.split('T')[0] : ''}
+                onChange={(e) => handleFiltro('fechaDesde', e.target.value ? `${e.target.value}T00:00:00` : '')}
+                className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-slate-500">Hasta</label>
+              <input
+                type="date"
+                value={filtros.fechaHasta ? filtros.fechaHasta.split('T')[0] : ''}
+                onChange={(e) => handleFiltro('fechaHasta', e.target.value ? `${e.target.value}T23:59:59` : '')}
+                className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow"
+              />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>

@@ -3,7 +3,7 @@ import { listarUsuarios, cambiarEstadoUsuario } from '../../services/usuarioServ
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
-import { Search, Plus, Edit2, ShieldOff, ShieldCheck } from 'lucide-react';
+import { Search, Plus, Edit2, ShieldOff, ShieldCheck, Filter } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -12,6 +12,7 @@ import Pagination from '../../components/Pagination';
 export default function ListaUsuarios() {
   const [usuarios, setUsuarios] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [rolFiltro, setRolFiltro] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { token } = useAuth();
@@ -30,16 +31,16 @@ export default function ListaUsuarios() {
 
   useEffect(() => {
     cargarUsuarios();
-  }, []);
+  }, [rolFiltro]);
 
   useEffect(() => {
     setPaginaActual(1);
-  }, [searchTerm]);
+  }, [searchTerm, rolFiltro]);
 
   const cargarUsuarios = async () => {
     try {
       setIsLoading(true);
-      const datos = await listarUsuarios();
+      const datos = await listarUsuarios(rolFiltro || undefined);
       setUsuarios(datos || []);
     } catch (error) {
       toast.error('Error al cargar la lista de usuarios');
@@ -84,17 +85,32 @@ export default function ListaUsuarios() {
       <Card>
         <CardHeader className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50/50">
           <CardTitle className="text-base font-semibold">Usuarios del Sistema</CardTitle>
-          <div className="relative w-full sm:w-72">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-slate-400" />
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+              <select
+                value={rolFiltro}
+                onChange={(e) => setRolFiltro(e.target.value)}
+                className="pl-10 pr-8 py-2 border border-slate-300 rounded-lg text-sm bg-white appearance-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Todos los roles</option>
+                <option value="ADMIN">Administrador</option>
+                <option value="OPERADOR">Operador</option>
+                <option value="MONITOR">Monitor</option>
+              </select>
             </div>
-            <input
-              type="text"
-              placeholder="Buscar por nombre o correo..."
-              className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <div className="relative w-full sm:w-72">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-slate-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Buscar por nombre o correo..."
+                className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">

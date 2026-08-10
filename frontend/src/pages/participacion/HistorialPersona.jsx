@@ -12,21 +12,40 @@ import {
   CheckCircle2, XCircle, Award, FileSearch
 } from 'lucide-react';
 
+const CRITERIOS = {
+  documento: { etiqueta: 'Documento', placeholder: 'Número de documento', icon: IdCard, tipo: 'text', inputMode: 'numeric', pattern: '[0-9]{8,15}' },
+  correo: { etiqueta: 'Correo', placeholder: 'correo@ejemplo.com', icon: Mail, tipo: 'email', inputMode: 'email', pattern: undefined },
+  nombre: { etiqueta: 'Nombre', placeholder: 'Nombre o apellido', icon: User, tipo: 'text', inputMode: 'text', pattern: undefined },
+};
+
 export default function HistorialPersona() {
-  const [documento, setDocumento] = useState('');
+  const [criterio, setCriterio] = useState('documento');
+  const [valor, setValor] = useState('');
   const [resultados, setResultados] = useState(null);
   const [buscando, setBuscando] = useState(false);
   const [busquedaHecha, setBusquedaHecha] = useState(false);
+
+  const config = CRITERIOS[criterio];
+
+  const handleCambiarCriterio = (nuevoCriterio) => {
+    setCriterio(nuevoCriterio);
+    setValor('');
+  };
+
+  const handleCambiarValor = (e) => {
+    const texto = criterio === 'documento' ? e.target.value.replace(/\D/g, '') : e.target.value;
+    setValor(texto);
+  };
 
   const handleBuscar = async (e) => {
     e.preventDefault();
     setBuscando(true);
     setBusquedaHecha(true);
     try {
-      const datos = await buscarHistorial({ documento });
+      const datos = await buscarHistorial({ [criterio]: valor });
       setResultados(datos);
       if (!datos || datos.length === 0) {
-        toast.error('No se encontró ningún participante con ese documento');
+        toast.error(`No se encontró ningún participante con ese ${config.etiqueta.toLowerCase()}`);
       }
     } catch (err) {
       toast.error('Error al buscar el historial');
@@ -47,15 +66,27 @@ export default function HistorialPersona() {
 
       <Card>
         <CardContent className="p-4">
-          <form onSubmit={handleBuscar} className="flex gap-2">
+          <form onSubmit={handleBuscar} className="flex flex-col sm:flex-row gap-2">
+            <select
+              value={criterio}
+              onChange={(e) => handleCambiarCriterio(e.target.value)}
+              className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-blue-500 focus:border-blue-500 sm:w-40"
+            >
+              {Object.entries(CRITERIOS).map(([valorCriterio, { etiqueta }]) => (
+                <option key={valorCriterio} value={valorCriterio}>{etiqueta}</option>
+              ))}
+            </select>
             <div className="relative flex-1">
-              <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <config.icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
-                value={documento}
-                onChange={(e) => setDocumento(e.target.value.replace(/\D/g, ''))}
-                placeholder="Número de documento"
-                pattern="[0-9]{8,15}" minLength={8} inputMode="numeric"
-                title="El documento debe ser numérico, mínimo 8 dígitos"
+                value={valor}
+                onChange={handleCambiarValor}
+                placeholder={config.placeholder}
+                type={config.tipo}
+                inputMode={config.inputMode}
+                pattern={config.pattern}
+                minLength={criterio === 'documento' ? 8 : undefined}
+                title={criterio === 'documento' ? 'El documento debe ser numérico, mínimo 8 dígitos' : undefined}
                 className="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                 required
               />
@@ -71,7 +102,7 @@ export default function HistorialPersona() {
         <Card>
           <CardContent className="py-12 text-center text-slate-400">
             <FileSearch className="w-10 h-10 mx-auto mb-3 text-slate-300" />
-            No se encontró ningún participante con ese documento.
+            No se encontró ningún participante con ese {config.etiqueta.toLowerCase()}.
           </CardContent>
         </Card>
       )}
