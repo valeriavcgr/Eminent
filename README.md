@@ -108,14 +108,9 @@ Al arrancar el backend, se crean estas cuentas existentes:
 | Rol | Correo | Contraseña |
 |---|---|---|
 | Administrador | `admin@eminent.com` | `Admin1234` |
-| Administrador | `admin2@eminent.com` | `Admin1234` |
 | Operador | `operador@eminent.com` | `Operador1` |
-| Operador | `operador2@eminent.com` | `Operador1` |
-| Operador | `operador3@eminent.com` | `Operador1` |
 | Monitor | `monitor@eminent.com` | `Monitor12` |
-| Monitor | `monitor2@eminent.com` | `Monitor12` |
-| Monitor | `monitor3@eminent.com` | `Monitor12` |
-| Monitor | `monitor4@eminent.com` | `Monitor12` |
+| Administrador + Operador + Monitor | `supervisor@eminent.com` | `Supervisor1` |
  
 El rol **Invitado** no requiere cuenta — se accede directamente desde la
 landing pública (`http://localhost:5173`) para inscribirse a eventos,

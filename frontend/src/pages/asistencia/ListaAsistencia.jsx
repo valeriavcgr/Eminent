@@ -69,6 +69,7 @@ export default function ListaAsistencia() {
   }
 
   const eventoTerminado = datos.eventoEstado === 'FINALIZADO' || datos.eventoEstado === 'CANCELADO';
+  const puedeRegistrarAsistencia = datos.eventoEstado === 'EN_CURSO';
 
   return (
     <div className="space-y-6">
@@ -86,7 +87,7 @@ export default function ListaAsistencia() {
           </div>
         </div>
 
-        {isMonitor && !eventoTerminado && (
+        {isMonitor && puedeRegistrarAsistencia && (
           <Button
             className={`bg-${themeColor}-600 hover:bg-${themeColor}-700 text-white shadow-md shadow-${themeColor}-200`}
             icon={QrCode}
@@ -148,7 +149,7 @@ export default function ListaAsistencia() {
                   <th className="p-3 text-left">Teléfono</th>
                   <th className="px-6 py-4">Estado</th>
                   <th className="px-6 py-4">Método</th>
-                  {isMonitor && !eventoTerminado && <th className="px-6 py-4 text-right">Acciones</th>}
+                  {isMonitor && puedeRegistrarAsistencia && <th className="px-6 py-4 text-right">Acciones</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -190,7 +191,7 @@ export default function ListaAsistencia() {
                       <td className="px-6 py-4 text-slate-600 capitalize">
                         {p.metodo ? p.metodo.toLowerCase() : '-'}
                       </td>
-                      {isMonitor && !eventoTerminado && (
+                      {isMonitor && puedeRegistrarAsistencia && (
                         <td className="px-6 py-4 text-right">
                           {!p.asistio && (
                             <Button

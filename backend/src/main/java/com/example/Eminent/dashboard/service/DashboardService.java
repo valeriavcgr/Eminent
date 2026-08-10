@@ -37,7 +37,7 @@ public class DashboardService {
         LocalDateTime desde = (fechaDesde != null) ? fechaDesde : LocalDateTime.of(2000, 1, 1, 0, 0);
         LocalDateTime hasta = (fechaHasta != null) ? fechaHasta : LocalDateTime.of(2100, 1, 1, 0, 0);
 
-        List<Evento> eventos = eventoRepository.buscarConFiltros(tipo, modalidad, estado, desde, hasta, Pageable.unpaged()).getContent();
+        List<Evento> eventos = eventoRepository.buscarConFiltros(tipo, modalidad, estado, desde, hasta, null, Pageable.unpaged()).getContent();
 
         if (rolActivo == Usuario.Rol.OPERADOR) {
             eventos = eventos.stream()

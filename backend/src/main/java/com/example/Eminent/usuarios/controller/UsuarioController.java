@@ -96,7 +96,7 @@ public class UsuarioController {
     @PatchMapping("/usuarios/{id}/estado")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UsuarioDTO> cambiarEstado(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        return ResponseEntity.ok(toDTO(service.cambiarEstado(id, body.get("estado"))));
+        return ResponseEntity.ok(toDTO(service.cambiarEstado(id, body.get("estado"), usuarioActual().getId())));
     }
 
     /** Convierte una entidad Usuario a su dto correspondiente para la respuesta API. */

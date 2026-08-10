@@ -22,5 +22,23 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Si el token expiró o es inválido, el backend responde 401 en cualquier ruta protegida.
+// Se limpia la sesión y se redirige a login, salvo que el 401 venga del propio login
+// (ahí ya lo maneja Login.jsx como "credenciales incorrectas").
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const esLogin = error.config?.url?.includes('/auth/login');
+    if (error.response?.status === 401 && !esLogin) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('roles');
+      localStorage.removeItem('rolActivo');
+      localStorage.removeItem('ultimaActividad');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 //localstorage: "variable que guarda texto plano, no se borra al regenerar la pagina"
 export default api;

@@ -154,12 +154,20 @@ public class PdfService {
             qrImagen.setMarginBottom(0);
             document.add(qrImagen);
 
+            document.add(new Paragraph("Fecha de emisión: " + fechaEmision)
+                    .setFont(fuenteNormal)
+                    .setFontColor(TEXTO_GRIS)
+                    .setFontSize(10)
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setMarginTop(6)
+                    .setMarginBottom(0));
+
             document.add(new Paragraph("Código de verificación: " + codigoUnico)
                     .setFont(fuenteCursiva)
                     .setFontColor(TEXTO_GRIS)
                     .setFontSize(10)
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setMarginTop(6)
+                    .setMarginTop(2)
                     .setMarginBottom(0));
 
             // 4. Bordes — al final, con el documento todavía abierto (página ya existe con certeza)

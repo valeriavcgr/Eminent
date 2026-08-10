@@ -1,5 +1,6 @@
 package com.example.Eminent.eventos.controller;
 
+import com.example.Eminent.auth.RolActivoResolver;
 import com.example.Eminent.eventos.dto.EventoDTO;
 import com.example.Eminent.eventos.entity.Evento;
 import com.example.Eminent.eventos.entity.EventoMonitor;
@@ -31,6 +32,7 @@ public class EventosController {
     @Autowired private UsuarioRepository usuarioRepository;
     @Autowired private InscripcionRepository inscripcionRepository;
     @Autowired private EventoMonitorRepository eventoMonitorRepository;
+    @Autowired private RolActivoResolver rolActivoResolver;
 
     /**
      * Obtiene los detalles completos de un evento por su ID.
@@ -75,9 +77,12 @@ public class EventosController {
             @RequestParam(required = false) Evento.Estado estado,
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime fechaDesde,
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime fechaHasta,
+            @RequestHeader(value = RolActivoResolver.HEADER, required = false) String rolActivoHeader,
             Pageable pageable) {
 
-        Page<Evento> pagina = eventosService.listarConFiltros(tipo, modalidad, estado, fechaDesde, fechaHasta, pageable);
+        Usuario usuario = obtenerUsuarioActual();
+        Usuario.Rol rolActivo = rolActivoResolver.resolver(usuario, rolActivoHeader);
+        Page<Evento> pagina = eventosService.listarConFiltros(tipo, modalidad, estado, fechaDesde, fechaHasta, usuario, rolActivo, pageable);
         return ResponseEntity.ok(pagina.map(this::toDTO));
     }
 

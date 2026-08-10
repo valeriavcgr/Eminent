@@ -223,8 +223,11 @@ export default function Layout() {
       </header>
 
         {/* Page Content */}
+        {/* key=rolActivo fuerza a React a desmontar y volver a montar la página
+            actual al cambiar de rol, para que recargue sus datos con el rol nuevo
+            en vez de quedarse con lo que ya había cargado con el rol anterior. */}
         <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
-          <Outlet />
+          <Outlet key={rolActivo} />
         </main>
       </div>
 

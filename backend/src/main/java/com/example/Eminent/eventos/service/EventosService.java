@@ -102,10 +102,12 @@ public class EventosService {
 
     public Page<Evento> listarConFiltros(Evento.Tipo tipo, Evento.Modalidad modalidad, Evento.Estado estado,
                                                   LocalDateTime fechaDesde, LocalDateTime fechaHasta,
+                                                  Usuario usuario, Usuario.Rol rolActivo,
                                                   Pageable pageable) {
         LocalDateTime desde = (fechaDesde != null) ? fechaDesde : LocalDateTime.of(2000, 1, 1, 0, 0);
         LocalDateTime hasta = (fechaHasta != null) ? fechaHasta : LocalDateTime.of(2100, 1, 1, 0, 0);
-        return eventoRepository.buscarConFiltros(tipo, modalidad, estado, desde, hasta, pageable);
+        Long creadoPorId = (rolActivo == Usuario.Rol.OPERADOR) ? usuario.getId() : null;
+        return eventoRepository.buscarConFiltros(tipo, modalidad, estado, desde, hasta, creadoPorId, pageable);
     }
 
     @Transactional

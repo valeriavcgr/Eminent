@@ -199,11 +199,16 @@ public class UsuarioService {
     /**
      * Cambia el estado de un usuario.
      */
-    public Usuario cambiarEstado(Long id, String nuevoEstado) {
+    public Usuario cambiarEstado(Long id, String nuevoEstado, Long idUsuarioActual) {
         Usuario usuario = repo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
-        usuario.setEstado(Usuario.Estado.valueOf(nuevoEstado.toUpperCase()));
+        Usuario.Estado estado = Usuario.Estado.valueOf(nuevoEstado.toUpperCase());
+        if (estado == Usuario.Estado.INACTIVO && id.equals(idUsuarioActual)) {
+            throw new IllegalArgumentException("No puedes desactivar tu propia cuenta");
+        }
+
+        usuario.setEstado(estado);
         Usuario actualizado = repo.save(usuario);
 
         auditoriaService.registrar(actualizado,

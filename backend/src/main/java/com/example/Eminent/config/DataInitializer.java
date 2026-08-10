@@ -3,6 +3,8 @@ package com.example.Eminent.config;
 import com.example.Eminent.asistencia.entity.Asistencia;
 import com.example.Eminent.asistencia.repository.AsistenciaRepository;
 import com.example.Eminent.certificacion.service.CertificacionService;
+import com.example.Eminent.encuesta.entity.Encuesta;
+import com.example.Eminent.encuesta.repository.EncuestaRepository;
 import com.example.Eminent.eventos.entity.Evento;
 import com.example.Eminent.eventos.entity.EventoMonitor;
 import com.example.Eminent.eventos.repository.EventoMonitorRepository;
@@ -40,6 +42,7 @@ public class DataInitializer implements CommandLineRunner {
     private final AsistenciaRepository asistenciaRepository;
     private final QrService qrService;
     private final CertificacionService certificacionService;
+    private final EncuestaRepository encuestaRepository;
 
     private static final String[] NOMBRES = {
             "Carlos", "María", "Luis", "Ana", "Javier", "Sofia", "Diego", "Valentina", "Andrés", "Laura"
@@ -48,12 +51,26 @@ public class DataInitializer implements CommandLineRunner {
             "Gómez", "Rodríguez", "Pérez", "Martínez", "López", "Torres", "García", "Ramírez", "Vargas", "Hernández"
     };
 
+    private static final String[] COMENTARIOS_ENCUESTA = {
+            "Excelente organización, aprendí mucho.",
+            "Muy buen contenido, aunque el tiempo se sintió un poco corto.",
+            "El facilitador explicó todo muy claro, lo recomiendo.",
+            "Buena experiencia en general, me gustaría más ejercicios prácticos.",
+            "Todo estuvo muy bien organizado, ¡gracias!",
+            "Superó mis expectativas, muy útil para el día a día.",
+            "Estuvo bien, aunque la conexión virtual tuvo algunos problemas.",
+            "Aprendí bastante, me gustaría que hubiera una segunda parte.",
+            "Buena dinámica y buen manejo del tiempo.",
+            "Cumplió lo prometido, volvería a participar."
+    };
+    private static final int[] CALIFICACIONES_ENCUESTA = { 5, 4, 5, 4, 5, 5, 3, 4, 5, 4 };
+
     public DataInitializer(UsuarioRepository usuarioRepository, RolRepository rolRepository, JdbcTemplate jdbcTemplate,
-                           PasswordEncoder passwordEncoder,
-                           EventoRepository eventoRepository, EventoMonitorRepository eventoMonitorRepository,
-                           ParticipanteRepository participanteRepository, InscripcionRepository inscripcionRepository,
-                           AsistenciaRepository asistenciaRepository, QrService qrService,
-                           CertificacionService certificacionService) {
+            PasswordEncoder passwordEncoder,
+            EventoRepository eventoRepository, EventoMonitorRepository eventoMonitorRepository,
+            ParticipanteRepository participanteRepository, InscripcionRepository inscripcionRepository,
+            AsistenciaRepository asistenciaRepository, QrService qrService,
+            CertificacionService certificacionService, EncuestaRepository encuestaRepository) {
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.jdbcTemplate = jdbcTemplate;
@@ -65,6 +82,7 @@ public class DataInitializer implements CommandLineRunner {
         this.asistenciaRepository = asistenciaRepository;
         this.qrService = qrService;
         this.certificacionService = certificacionService;
+        this.encuestaRepository = encuestaRepository;
     }
 
     @Override
@@ -73,70 +91,84 @@ public class DataInitializer implements CommandLineRunner {
         relajarColumnaRolLegada();
         repararForeignKeyAuditoriaUsuario();
         repararCheckTipoAfectadoAuditoria();
+        repararCheckAforoEvento();
+        repararCheckCalificacionEncuesta();
+        repararUniqueInscripcionParticipanteEvento();
         sembrarCatalogoRoles();
         migrarRolUnicoAUsuarioRoles();
         sembrarUsuarios();
         sembrarEventosYParticipantes();
     }
 
-    /**
-     * `ddl-auto=update` nunca revierte un NOT NULL existente en una columna, así que la
-     * columna legada `usuario.rol` sigue exigiendo valor aunque la entidad ya la declare
-     * opcional. Se relaja explícitamente por SQL (operación idempotente en Postgres: si ya
-     * es nullable, no hace nada) para que crear usuarios nuevos no falle por esa columna.
-     */
     private void relajarColumnaRolLegada() {
         jdbcTemplate.execute("ALTER TABLE usuario ALTER COLUMN rol DROP NOT NULL");
     }
 
-    /**
-     * La FK de `auditoria.usuario_id` hacia `usuario` se creó originalmente sin `ON DELETE
-     * SET NULL`, por lo que eliminar cualquier usuario con historial de auditoría (prácticamente
-     * cualquiera, ya que hasta iniciar sesión genera un registro) fallaba con una violación de
-     * integridad referencial. La entidad ya trata `usuario` como opcional (cae a "Sistema"), así
-     * que se corrige la restricción para que coincida con esa intención. Idempotente: si la FK ya
-     * tiene `ON DELETE SET NULL`, no hace nada.
-     */
     private void repararForeignKeyAuditoriaUsuario() {
         jdbcTemplate.execute("""
-            DO $$
-            DECLARE
-                nombre_restriccion text;
-                regla_borrado text;
-            BEGIN
-                SELECT rc.constraint_name, rc.delete_rule INTO nombre_restriccion, regla_borrado
-                FROM information_schema.referential_constraints rc
-                JOIN information_schema.key_column_usage kcu ON kcu.constraint_name = rc.constraint_name
-                WHERE rc.constraint_schema = 'public'
-                  AND kcu.table_name = 'auditoria'
-                  AND kcu.column_name = 'usuario_id'
-                LIMIT 1;
+                DO $$
+                DECLARE
+                    nombre_restriccion text;
+                    regla_borrado text;
+                BEGIN
+                    SELECT rc.constraint_name, rc.delete_rule INTO nombre_restriccion, regla_borrado
+                    FROM information_schema.referential_constraints rc
+                    JOIN information_schema.key_column_usage kcu ON kcu.constraint_name = rc.constraint_name
+                    WHERE rc.constraint_schema = 'public'
+                      AND kcu.table_name = 'auditoria'
+                      AND kcu.column_name = 'usuario_id'
+                    LIMIT 1;
 
-                IF nombre_restriccion IS NOT NULL AND regla_borrado <> 'SET NULL' THEN
-                    EXECUTE 'ALTER TABLE auditoria DROP CONSTRAINT ' || quote_ident(nombre_restriccion);
-                    EXECUTE 'ALTER TABLE auditoria ADD CONSTRAINT fk_auditoria_usuario ' ||
-                            'FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE SET NULL';
-                END IF;
-            END $$;
-            """);
+                    IF nombre_restriccion IS NOT NULL AND regla_borrado <> 'SET NULL' THEN
+                        EXECUTE 'ALTER TABLE auditoria DROP CONSTRAINT ' || quote_ident(nombre_restriccion);
+                        EXECUTE 'ALTER TABLE auditoria ADD CONSTRAINT fk_auditoria_usuario ' ||
+                                'FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE SET NULL';
+                    END IF;
+                END $$;
+                """);
+    }
+
+    private void repararCheckTipoAfectadoAuditoria() {
+        jdbcTemplate.execute("ALTER TABLE auditoria DROP CONSTRAINT IF EXISTS auditoria_tipo_afectado_check");
+        jdbcTemplate.execute(
+                """
+                        ALTER TABLE auditoria ADD CONSTRAINT auditoria_tipo_afectado_check
+                        CHECK (tipo_afectado IN ('USUARIO','EVENTO','PARTICIPANTE','INSCRIPCION','ASISTENCIA','CERTIFICADO','ENCUESTA'))
+                        """);
+    }
+
+    private void repararCheckAforoEvento() {
+        jdbcTemplate.execute("ALTER TABLE evento DROP CONSTRAINT IF EXISTS evento_aforo_check");
+        jdbcTemplate.execute("ALTER TABLE evento ADD CONSTRAINT evento_aforo_check CHECK (aforo > 0)");
     }
 
     /**
-     * La restricción CHECK de `auditoria.tipo_afectado` se generó con los valores del enum
-     * {@code Auditoria.TipoAfectado} vigentes en su momento; `ddl-auto=update` no la amplía
-     * cuando se agrega un valor nuevo al enum (p. ej. ENCUESTA), así que insertar una auditoría
-     * con ese valor fallaría. Se recrea con la lista completa actual en cada arranque
-     * (drop+create incondicional; inofensivo si ya está al día).
+     * Mismo caso que {@link #repararCheckAforoEvento()}, para la calificación de
+     * encuestas.
      */
-    private void repararCheckTipoAfectadoAuditoria() {
-        jdbcTemplate.execute("ALTER TABLE auditoria DROP CONSTRAINT IF EXISTS auditoria_tipo_afectado_check");
-        jdbcTemplate.execute("""
-            ALTER TABLE auditoria ADD CONSTRAINT auditoria_tipo_afectado_check
-            CHECK (tipo_afectado IN ('USUARIO','EVENTO','PARTICIPANTE','INSCRIPCION','ASISTENCIA','CERTIFICADO','ENCUESTA'))
-            """);
+    private void repararCheckCalificacionEncuesta() {
+        jdbcTemplate.execute("ALTER TABLE encuesta DROP CONSTRAINT IF EXISTS encuesta_calificacion_check");
+        jdbcTemplate.execute(
+                "ALTER TABLE encuesta ADD CONSTRAINT encuesta_calificacion_check CHECK (calificacion BETWEEN 1 AND 5)");
     }
 
-    /** Puebla el catálogo de roles (tabla `roles`) con los tres valores fijos del sistema, si no existen. */
+    /**
+     * Impide a nivel de BD que un mismo participante quede inscrito dos veces al
+     * mismo evento;
+     * hoy solo se valida en {@code ParticipacionService}. Idempotente igual que las
+     * anteriores.
+     */
+    private void repararUniqueInscripcionParticipanteEvento() {
+        jdbcTemplate
+                .execute("ALTER TABLE inscripcion DROP CONSTRAINT IF EXISTS inscripcion_participante_evento_unique");
+        jdbcTemplate.execute(
+                "ALTER TABLE inscripcion ADD CONSTRAINT inscripcion_participante_evento_unique UNIQUE (participante_id, evento_id)");
+    }
+
+    /**
+     * Puebla el catálogo de roles (tabla `roles`) con los tres valores fijos del
+     * sistema, si no existen.
+     */
     private void sembrarCatalogoRoles() {
         for (Usuario.Rol nombre : Usuario.Rol.values()) {
             rolRepository.findByNombre(nombre).orElseGet(() -> rolRepository.save(new Rol(nombre)));
@@ -144,15 +176,19 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     /**
-     * Migración idempotente: copia el valor de la columna legada `usuario.rol` (leída vía
-     * {@code rolLegado}) hacia la nueva tabla `usuario_roles` para cualquier usuario que aún
-     * no tenga roles asignados. No hace nada en arranques posteriores una vez migrado.
+     * Migración idempotente: copia el valor de la columna legada `usuario.rol`
+     * (leída vía
+     * {@code rolLegado}) hacia la nueva tabla `usuario_roles` para cualquier
+     * usuario que aún
+     * no tenga roles asignados. No hace nada en arranques posteriores una vez
+     * migrado.
      */
     private void migrarRolUnicoAUsuarioRoles() {
         List<Usuario> usuarios = usuarioRepository.findAll();
         int migrados = 0;
         for (Usuario usuario : usuarios) {
-            if (!usuario.getRoles().isEmpty() || usuario.getRolLegado() == null) continue;
+            if (!usuario.getRoles().isEmpty() || usuario.getRolLegado() == null)
+                continue;
             Rol rolEntidad = rolRepository.findByNombre(usuario.getRolLegado())
                     .orElseThrow(() -> new IllegalStateException("Catálogo de roles incompleto"));
             usuario.getRoles().add(rolEntidad);
@@ -160,30 +196,29 @@ public class DataInitializer implements CommandLineRunner {
             migrados++;
         }
         if (migrados > 0) {
-            System.out.println("[DataInitializer] Migrados " + migrados + " usuario(s) de rol único a roles múltiples.");
+            System.out
+                    .println("[DataInitializer] Migrados " + migrados + " usuario(s) de rol único a roles múltiples.");
         }
     }
 
     private void sembrarUsuarios() {
-        crearOActualizarUsuarioSeed("admin@eminent.com", "Admin1234", "+573001234567", Usuario.Rol.ADMIN);
-        crearOActualizarUsuarioSeed("admin2@eminent.com", "Admin1234", "+573001234568", Usuario.Rol.ADMIN);
-
-        crearOActualizarUsuarioSeed("operador@eminent.com", "Operador1", "+573002345678", Usuario.Rol.OPERADOR);
-        crearOActualizarUsuarioSeed("operador2@eminent.com", "Operador1", "+573002345679", Usuario.Rol.OPERADOR);
-        crearOActualizarUsuarioSeed("operador3@eminent.com", "Operador1", "+573002345680", Usuario.Rol.OPERADOR);
-
-        crearOActualizarUsuarioSeed("monitor@eminent.com", "Monitor12", "+573003456789", Usuario.Rol.MONITOR);
-        crearOActualizarUsuarioSeed("monitor2@eminent.com", "Monitor12", "+573003456790", Usuario.Rol.MONITOR);
-        crearOActualizarUsuarioSeed("monitor3@eminent.com", "Monitor12", "+573003456791", Usuario.Rol.MONITOR);
-        crearOActualizarUsuarioSeed("monitor4@eminent.com", "Monitor12", "+573003456792", Usuario.Rol.MONITOR);
+        crearOActualizarUsuarioSeed("admin@eminent.com", "Camila", "Restrepo", "Admin1234", "+573001234567",
+                Usuario.Rol.ADMIN);
+        crearOActualizarUsuarioSeed("operador@eminent.com", "Sebastián", "Duarte", "Operador1", "+573002345678",
+                Usuario.Rol.OPERADOR);
+        crearOActualizarUsuarioSeed("monitor@eminent.com", "Daniela", "Salazar", "Monitor12", "+573003456789",
+                Usuario.Rol.MONITOR);
+        crearOActualizarUsuarioSeed("supervisor@eminent.com", "Mateo", "Cárdenas", "Supervisor1", "+573004567890",
+                Usuario.Rol.ADMIN, Usuario.Rol.OPERADOR, Usuario.Rol.MONITOR);
     }
 
-    private void crearOActualizarUsuarioSeed(String correo, String contrasena, String telefono, Usuario.Rol... roles) {
+    private void crearOActualizarUsuarioSeed(String correo, String nombre, String apellido, String contrasena,
+            String telefono, Usuario.Rol... roles) {
         Usuario usuario = usuarioRepository.findByCorreo(correo).orElse(null);
         if (usuario == null) {
             usuario = new Usuario();
-            usuario.setNombre(roles[0].name());
-            usuario.setApellido("User");
+            usuario.setNombre(nombre);
+            usuario.setApellido(apellido);
             usuario.setCorreo(correo);
             for (Usuario.Rol rol : roles) {
                 usuario.getRoles().add(rolRepository.findByNombre(rol).orElseThrow());
@@ -208,16 +243,12 @@ public class DataInitializer implements CommandLineRunner {
 
         List<Usuario> creadores = new ArrayList<>();
         creadores.add(usuarioRepository.findByCorreo("admin@eminent.com").orElseThrow());
-        creadores.add(usuarioRepository.findByCorreo("admin2@eminent.com").orElseThrow());
         creadores.add(usuarioRepository.findByCorreo("operador@eminent.com").orElseThrow());
-        creadores.add(usuarioRepository.findByCorreo("operador2@eminent.com").orElseThrow());
-        creadores.add(usuarioRepository.findByCorreo("operador3@eminent.com").orElseThrow());
+        creadores.add(usuarioRepository.findByCorreo("supervisor@eminent.com").orElseThrow());
 
         List<Usuario> monitores = new ArrayList<>();
         monitores.add(usuarioRepository.findByCorreo("monitor@eminent.com").orElseThrow());
-        monitores.add(usuarioRepository.findByCorreo("monitor2@eminent.com").orElseThrow());
-        monitores.add(usuarioRepository.findByCorreo("monitor3@eminent.com").orElseThrow());
-        monitores.add(usuarioRepository.findByCorreo("monitor4@eminent.com").orElseThrow());
+        monitores.add(usuarioRepository.findByCorreo("supervisor@eminent.com").orElseThrow());
 
         Evento.Tipo[] tipos6 = {
                 Evento.Tipo.TALLER, Evento.Tipo.CAPACITACION, Evento.Tipo.TORNEO,
@@ -228,6 +259,23 @@ public class DataInitializer implements CommandLineRunner {
                 Evento.Modalidad.VIRTUAL, Evento.Modalidad.PRESENCIAL, Evento.Modalidad.VIRTUAL
         };
 
+        String[] nombresFinalizados = {
+                "Taller de Liderazgo y Trabajo en Equipo",
+                "Capacitación en Excel Avanzado",
+                "Torneo de Ajedrez Corporativo",
+                "Taller de Oratoria y Comunicación Efectiva",
+                "Capacitación en Seguridad de la Información",
+                "Torneo de Trivia Corporativa"
+        };
+        String[] nombresProgramados = {
+                "Taller de Manejo del Estrés Laboral",
+                "Capacitación en Atención al Cliente",
+                "Torneo de Fútbol 5 Interáreas",
+                "Taller de Innovación y Creatividad",
+                "Capacitación en Gestión del Tiempo",
+                "Torneo de Preguntados Virtual"
+        };
+
         int contadorDocumento = 900000001; // arranca en un documento base, único y creciente
 
         // --- 6 eventos FINALIZADOS (fechas en el pasado) ---
@@ -236,10 +284,9 @@ public class DataInitializer implements CommandLineRunner {
             LocalDateTime fin = inicio.plusHours(4);
 
             Evento evento = crearEvento(
-                    "Evento Finalizado " + (j + 1) + " - " + tipos6[j].name(),
+                    nombresFinalizados[j],
                     tipos6[j], modalidades6[j], inicio, fin, Evento.Estado.FINALIZADO,
-                    creadores.get(j % creadores.size())
-            );
+                    creadores.get(j % creadores.size()));
 
             Usuario monitorAsignado = monitores.get(j % monitores.size());
             asignarMonitor(evento, monitorAsignado);
@@ -250,16 +297,15 @@ public class DataInitializer implements CommandLineRunner {
             certificacionService.generarCertificadosDeEvento(evento);
         }
 
-        //  eventos PROGRAMADOS (fechas en el futuro)
+        // eventos PROGRAMADOS (fechas en el futuro)
         for (int j = 0; j < 6; j++) {
             LocalDateTime inicio = LocalDateTime.now().plusDays(10 + j * 2).withHour(9).withMinute(0);
             LocalDateTime fin = inicio.plusHours(4);
 
             Evento evento = crearEvento(
-                    "Evento Programado " + (j + 1) + " - " + tipos6[j].name(),
+                    nombresProgramados[j],
                     tipos6[j], modalidades6[j], inicio, fin, Evento.Estado.PROGRAMADO,
-                    creadores.get((j + 2) % creadores.size())
-            );
+                    creadores.get((j + 2) % creadores.size()));
 
             Usuario monitorAsignado = monitores.get((j + 1) % monitores.size());
             asignarMonitor(evento, monitorAsignado);
@@ -267,11 +313,11 @@ public class DataInitializer implements CommandLineRunner {
             contadorDocumento = sembrarParticipantesDelEvento(evento, contadorDocumento, false, monitorAsignado);
         }
 
-        System.out.println("Semilla masiva completada: 9 usuarios, 12 eventos, 120 participantes.");
+        System.out.println("Semilla masiva completada: 4 usuarios, 12 eventos, 120 participantes, 24 encuestas.");
     }
 
     private Evento crearEvento(String nombre, Evento.Tipo tipo, Evento.Modalidad modalidad,
-                               LocalDateTime inicio, LocalDateTime fin, Evento.Estado estado, Usuario creadoPor) {
+            LocalDateTime inicio, LocalDateTime fin, Evento.Estado estado, Usuario creadoPor) {
         Evento evento = new Evento();
         evento.setNombre(nombre);
         evento.setTipo(tipo);
@@ -292,9 +338,8 @@ public class DataInitializer implements CommandLineRunner {
         eventoMonitorRepository.save(asignacion);
     }
 
-
     private int sembrarParticipantesDelEvento(Evento evento, int contadorDocumentoInicial,
-                                              boolean marcarAsistencia, Usuario monitorParaAsistencia) throws Exception {
+            boolean marcarAsistencia, Usuario monitorParaAsistencia) throws Exception {
         int contadorDocumento = contadorDocumentoInicial;
 
         for (int k = 0; k < 10; k++) {
@@ -330,7 +375,17 @@ public class DataInitializer implements CommandLineRunner {
                 asistencia.setFechaHora(evento.getFechaInicio().plusMinutes(20 + k * 10L));
                 asistencia.setMetodo(k % 2 == 0 ? Asistencia.Metodo.MANUAL : Asistencia.Metodo.QR);
                 asistencia.setRegistradoPor(monitorParaAsistencia);
-                asistenciaRepository.save(asistencia);
+                asistencia = asistenciaRepository.save(asistencia);
+
+                // De cada 5 asistentes, 4 responden la encuesta de satisfacción
+                if (k < 4) {
+                    int idx = (int) ((evento.getId() + k) % COMENTARIOS_ENCUESTA.length);
+                    Encuesta encuesta = new Encuesta();
+                    encuesta.setAsistencia(asistencia);
+                    encuesta.setCalificacion(CALIFICACIONES_ENCUESTA[idx]);
+                    encuesta.setComentario(COMENTARIOS_ENCUESTA[idx]);
+                    encuestaRepository.save(encuesta);
+                }
             }
         }
 

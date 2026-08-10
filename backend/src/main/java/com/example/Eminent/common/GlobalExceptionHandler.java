@@ -1,5 +1,6 @@
 package com.example.Eminent.common;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -65,6 +66,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(Map.of(
                 "mensaje", ex.getMessage(),
                 "codigo", 400,
+                "timestamp", LocalDateTime.now()));
+    }
+
+    /**
+     * Maneja búsquedas de entidades inexistentes (por ejemplo, un evento o usuario con un id
+     * que ya no existe). Retorna 404 Not Found en vez de dejar que se propague como 500.
+     */
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<?> handleEntityNotFound(EntityNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "mensaje", ex.getMessage(),
+                "codigo", 404,
                 "timestamp", LocalDateTime.now()));
     }
 

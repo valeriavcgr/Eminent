@@ -26,6 +26,10 @@ public class EncuestaService {
             throw new IllegalArgumentException("La calificación debe estar entre 1 y 5 estrellas");
         }
 
+        if (datos.getComentario() != null && datos.getComentario().length() > 300) {
+            throw new IllegalArgumentException("El comentario no puede superar los 300 caracteres");
+        }
+
         Certificado certificado = certificadoRepo.findByCodigoUnico(datos.getCodigoUnico())
                 .orElseThrow(() -> new IllegalArgumentException("Certificado no encontrado"));
 
