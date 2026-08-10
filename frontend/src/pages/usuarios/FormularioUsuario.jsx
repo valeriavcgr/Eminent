@@ -150,7 +150,10 @@ export default function FormularioUsuario() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Correo Electrónico</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Correo Electrónico
+                    {isEditing && <span className="text-slate-400 text-xs font-normal"> (No se puede modificar)</span>}
+                  </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <Mail className="h-4 w-4 text-slate-400" />
@@ -160,7 +163,11 @@ export default function FormularioUsuario() {
                       type="email"
                       value={form.correo}
                       onChange={handleChange}
-                      className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white shadow-sm"
+                      disabled={isEditing}
+                      readOnly={isEditing}
+                      pattern="^[A-Za-z0-9._%+-]+@eminent\.com$"
+                      title="El correo debe pertenecer al dominio @eminent.com"
+                      className={`block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 sm:text-sm shadow-sm ${isEditing ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white'}`}
                       placeholder="juan.perez@eminent.com"
                       required
                     />

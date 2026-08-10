@@ -27,15 +27,26 @@ public class UsuarioService {
 
     private static final Pattern PATRON_TELEFONO = Pattern.compile("^\\+?[0-9]{7,15}$");
     private static final Pattern PATRON_CONTRASENA = Pattern.compile("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}$");
+    private static final Pattern PATRON_CORREO_EMPRESA = Pattern.compile("^[A-Za-z0-9._%+-]+@eminent\\.com$",
+            Pattern.CASE_INSENSITIVE);
 
-    @Autowired private UsuarioRepository repo;
-    @Autowired private RolRepository rolRepo;
-    @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private AuthenticationManager authManager;
-    @Autowired private JwtUtil jwtUtil;
-    @Autowired private AuditoriaService auditoriaService;
+    @Autowired
+    private UsuarioRepository repo;
+    @Autowired
+    private RolRepository rolRepo;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private AuthenticationManager authManager;
+    @Autowired
+    private JwtUtil jwtUtil;
+    @Autowired
+    private AuditoriaService auditoriaService;
 
-    /** Resuelve una lista de nombres de rol (texto) a las entidades Rol del catálogo. */
+    /**
+     * Resuelve una lista de nombres de rol (texto) a las entidades Rol del
+     * catálogo.
+     */
     private Set<Rol> resolverRolesDesdeNombres(List<String> nombres) {
         Set<Rol> resultado = new HashSet<>();
         for (String nombre : nombres) {
@@ -65,11 +76,16 @@ public class UsuarioService {
 
         if (datos.getTelefono() != null && !datos.getTelefono().isBlank() &&
                 !PATRON_TELEFONO.matcher(datos.getTelefono()).matches()) {
-            throw new IllegalArgumentException("Formato de teléfono inválido. Use +573001234567 o 3001234567");
+            throw new IllegalArgumentException("Formato de teléfono inválido. Use 3001234567");
         }
 
         if (!PATRON_CONTRASENA.matcher(datos.getContrasena()).matches()) {
-            throw new IllegalArgumentException("La contraseña debe tener al menos 8 caracteres, una letra mayúscula, una minúscula y un dígito");
+            throw new IllegalArgumentException(
+                    "La contraseña debe tener al menos 8 caracteres, una letra mayúscula, una minúscula y un dígito");
+        }
+
+        if (!PATRON_CORREO_EMPRESA.matcher(datos.getCorreo()).matches()) {
+            throw new IllegalArgumentException("El correo electrónico debe finalizar con @eminent.com");
         }
 
         if (repo.existsByCorreo(datos.getCorreo())) {
@@ -96,7 +112,8 @@ public class UsuarioService {
     }
 
     /**
-     * Lista usuarios paginados, filtrando opcionalmente por rol (usuarios que tengan ese rol
+     * Lista usuarios paginados, filtrando opcionalmente por rol (usuarios que
+     * tengan ese rol
      * entre los suyos).
      */
     public Page<Usuario> listar(String rol, Pageable pageable) {
@@ -130,22 +147,25 @@ public class UsuarioService {
     }
 
     /**
-     * Edita los datos de un usuario existente con validación de teléfono y contraseña opcional.
-     * Un ADMIN puede asignar o quitar cualquier rol (incluido ADMIN) a cualquier usuario,
-     * incluso a sí mismo — esta acción ya está reservada a administradores vía @PreAuthorize.
+     * Edita los datos de un usuario existente con validación de teléfono y
+     * contraseña opcional.
+     * Un ADMIN puede asignar o quitar cualquier rol (incluido ADMIN) a cualquier
+     * usuario,
+     * incluso a sí mismo — esta acción ya está reservada a administradores
+     * vía @PreAuthorize.
      */
     public Usuario editar(Long id, UsuarioRequest datos) {
         Usuario existente = repo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
-        if (datos.getCorreo() != null && !datos.getCorreo().equals(existente.getCorreo())
-                && repo.existsByCorreo(datos.getCorreo())) {
-            throw new IllegalArgumentException("El correo electrónico ya se encuentra registrado");
+        if (datos.getCorreo() != null && !datos.getCorreo().equals(existente.getCorreo())) {
+            throw new IllegalArgumentException("El correo electrónico no se puede modificar");
         }
 
-        if (datos.getNombre() != null) existente.setNombre(datos.getNombre());
-        if (datos.getApellido() != null) existente.setApellido(datos.getApellido());
-        if (datos.getCorreo() != null) existente.setCorreo(datos.getCorreo());
+        if (datos.getNombre() != null)
+            existente.setNombre(datos.getNombre());
+        if (datos.getApellido() != null)
+            existente.setApellido(datos.getApellido());
         if (datos.getTelefono() != null) {
             if (!datos.getTelefono().isBlank() && !PATRON_TELEFONO.matcher(datos.getTelefono()).matches()) {
                 throw new IllegalArgumentException("Formato de teléfono inválido. Use +573001234567 o 3001234567");
@@ -162,7 +182,8 @@ public class UsuarioService {
 
         if (datos.getContrasena() != null && !datos.getContrasena().isBlank()) {
             if (!PATRON_CONTRASENA.matcher(datos.getContrasena()).matches()) {
-                throw new IllegalArgumentException("La contraseña debe tener al menos 8 caracteres, una letra mayúscula, una minúscula y un dígito");
+                throw new IllegalArgumentException(
+                        "La contraseña debe tener al menos 8 caracteres, una letra mayúscula, una minúscula y un dígito");
             }
             existente.setContrasena(passwordEncoder.encode(datos.getContrasena()));
         }
@@ -176,7 +197,7 @@ public class UsuarioService {
     }
 
     /**
-     * Cambia el estado  de un usuario.
+     * Cambia el estado de un usuario.
      */
     public Usuario cambiarEstado(Long id, String nuevoEstado) {
         Usuario usuario = repo.findById(id)
@@ -186,7 +207,8 @@ public class UsuarioService {
         Usuario actualizado = repo.save(usuario);
 
         auditoriaService.registrar(actualizado,
-                actualizado.getEstado() == Usuario.Estado.ACTIVO ? Auditoria.Accion.EDITAR : Auditoria.Accion.DESACTIVAR,
+                actualizado.getEstado() == Usuario.Estado.ACTIVO ? Auditoria.Accion.EDITAR
+                        : Auditoria.Accion.DESACTIVAR,
                 Auditoria.TipoAfectado.USUARIO, actualizado.getId(),
                 "Cambio de estado de usuario " + actualizado.getCorreo() + " a " + actualizado.getEstado(), null);
 
