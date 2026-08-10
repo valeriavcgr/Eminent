@@ -32,24 +32,48 @@ export default function MisEventos() {
   const [eventoSeleccionado, setEventoSeleccionado] = useState(null);
   const [comentarios, setComentarios] = useState([]);
   const [cargandoComentarios, setCargandoComentarios] = useState(false);
+  const [filtroCalificacion, setFiltroCalificacion] = useState(null);
+  const [paginaComentarios, setPaginaComentarios] = useState(1);
+  const [totalPaginasComentarios, setTotalPaginasComentarios] = useState(1);
+  const [totalComentarios, setTotalComentarios] = useState(0);
 
   useEffect(() => {
     cargarEventos();
   }, []);
 
+  const cargarComentarios = async (eventoId, calificacion, pagina) => {
+    try {
+      const datos = await obtenerComentariosEvento(eventoId, { calificacion: calificacion || undefined, page: pagina - 1 });
+      setComentarios(datos.content || []);
+      setTotalPaginasComentarios(datos.totalPages || 1);
+      setTotalComentarios(datos.totalElements || 0);
+    } catch (error) {
+      toast.error('Error al cargar los resultados de la encuesta');
+      setComentarios([]);
+      setTotalPaginasComentarios(1);
+      setTotalComentarios(0);
+    }
+  };
+
   const abrirComentarios = async (evento) => {
     setEventoSeleccionado(evento);
     setModalAbierto(true);
     setCargandoComentarios(true);
-    try {
-      const datos = await obtenerComentariosEvento(evento.id);
-      setComentarios(datos);
-    } catch (error) {
-      toast.error('Error al cargar los resultados de la encuesta');
-      setComentarios([]);
-    } finally {
-      setCargandoComentarios(false);
-    }
+    setFiltroCalificacion(null);
+    setPaginaComentarios(1);
+    await cargarComentarios(evento.id, null, 1);
+    setCargandoComentarios(false);
+  };
+
+  const cambiarFiltroCalificacion = (calificacion) => {
+    setFiltroCalificacion(calificacion);
+    setPaginaComentarios(1);
+    cargarComentarios(eventoSeleccionado.id, calificacion, 1);
+  };
+
+  const cambiarPaginaComentarios = (pagina) => {
+    setPaginaComentarios(pagina);
+    cargarComentarios(eventoSeleccionado.id, filtroCalificacion, pagina);
   };
 
   const cargarEventos = async () => {
@@ -229,26 +253,54 @@ export default function MisEventos() {
       >
         {cargandoComentarios ? (
           <p className="text-sm text-slate-500 text-center py-6">Cargando resultados...</p>
-        ) : comentarios.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-6">Nadie ha respondido la encuesta de este evento todavía.</p>
         ) : (
-          <div className="space-y-4 max-h-96 overflow-y-auto">
-            {comentarios.map((c, idx) => (
-              <div key={idx} className="border-b border-slate-100 pb-3 last:border-0">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-sm text-slate-800">{c.participanteNombre}</span>
-                  <div className="flex items-center gap-0.5">
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <Star key={n} className={`w-3.5 h-3.5 ${n <= c.calificacion ? 'fill-amber-400 text-amber-400' : 'fill-slate-100 text-slate-200'}`} />
-                    ))}
-                  </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-1.5 mb-3">
+              <button
+                onClick={() => cambiarFiltroCalificacion(null)}
+                className={`px-2.5 py-1 text-xs font-medium rounded-full border ${filtroCalificacion === null ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+              >
+                Todas ({totalComentarios})
+              </button>
+              {[5, 4, 3, 2, 1].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => cambiarFiltroCalificacion(n)}
+                  className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full border ${filtroCalificacion === n ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                >
+                  {n} <Star className={`w-3 h-3 ${filtroCalificacion === n ? 'fill-white text-white' : 'fill-amber-400 text-amber-400'}`} />
+                </button>
+              ))}
+            </div>
+            {comentarios.length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-6">Nadie ha respondido la encuesta de este evento todavía.</p>
+            ) : (
+              <>
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {comentarios.map((c, idx) => (
+                    <div key={idx} className="border-b border-slate-100 pb-3 last:border-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-sm text-slate-800">{c.participanteNombre}</span>
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <Star key={n} className={`w-3.5 h-3.5 ${n <= c.calificacion ? 'fill-amber-400 text-amber-400' : 'fill-slate-100 text-slate-200'}`} />
+                          ))}
+                        </div>
+                      </div>
+                      {c.comentario && <p className="text-sm text-slate-600">{c.comentario}</p>}
+                      <p className="text-xs text-slate-400 mt-1">
+                        {c.fechaCreacion ? format(new Date(c.fechaCreacion), "d MMM yyyy - HH:mm", { locale: es }) : ''}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-                {c.comentario && <p className="text-sm text-slate-600">{c.comentario}</p>}
-                <p className="text-xs text-slate-400 mt-1">
-                  {c.fechaCreacion ? format(new Date(c.fechaCreacion), "d MMM yyyy - HH:mm", { locale: es }) : ''}
-                </p>
-              </div>
-            ))}
+                <Pagination
+                  paginaActual={paginaComentarios}
+                  totalPaginas={totalPaginasComentarios}
+                  onCambiarPagina={cambiarPaginaComentarios}
+                />
+              </>
+            )}
           </div>
         )}
       </Modal>

@@ -46,8 +46,8 @@ export default function Dashboard() {
     setModalAbierto(true);
     setCargandoComentarios(true);
     try {
-      const datos = await obtenerComentariosEvento(evento.id);
-      setComentarios(datos);
+      const datos = await obtenerComentariosEvento(evento.id, { size: 1000 });
+      setComentarios(datos.content || []);
     } catch (error) {
       console.error("Error al cargar comentarios", error);
       setComentarios([]);

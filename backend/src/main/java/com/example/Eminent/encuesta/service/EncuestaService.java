@@ -10,9 +10,9 @@ import com.example.Eminent.encuesta.entity.Encuesta;
 import com.example.Eminent.encuesta.repository.EncuestaRepository;
 import com.example.Eminent.participacion.entity.Participante;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class EncuestaService {
@@ -43,10 +43,10 @@ public class EncuestaService {
                 guardada.getId(), "Registro de encuesta de satisfacción (certificado " + datos.getCodigoUnico() + ")", null);
     }
 
-    public List<EncuestaComentarioDTO> listarPorEvento(Long eventoId) {
-        List<Encuesta> encuestas = encuestaRepo.findByAsistencia_Inscripcion_Evento_Id(eventoId);
+    public Page<EncuestaComentarioDTO> listarPorEvento(Long eventoId, Integer calificacion, Pageable pageable) {
+        Page<Encuesta> encuestas = encuestaRepo.buscarPorEvento(eventoId, calificacion, pageable);
 
-        return encuestas.stream().map(e -> {
+        return encuestas.map(e -> {
             Participante participante = e.getAsistencia().getInscripcion().getParticipante();
             EncuestaComentarioDTO dto = new EncuestaComentarioDTO();
             dto.setParticipanteNombre(participante.getNombre() + " " + participante.getApellido());
@@ -54,6 +54,10 @@ public class EncuestaService {
             dto.setComentario(e.getComentario());
             dto.setFechaCreacion(e.getFechaCreacion());
             return dto;
-        }).toList();
+        });
+    }
+
+    public Double obtenerPromedioEvento(Long eventoId) {
+        return encuestaRepo.promedioPorEvento(eventoId);
     }
 }
