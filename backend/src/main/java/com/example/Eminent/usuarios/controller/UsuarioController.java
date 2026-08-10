@@ -1,6 +1,7 @@
 package com.example.Eminent.usuarios.controller;
 
 import com.example.Eminent.usuarios.dto.LoginRequest;
+import jakarta.validation.Valid;
 import com.example.Eminent.usuarios.dto.UsuarioDTO;
 import com.example.Eminent.usuarios.dto.UsuarioRequest;
 import com.example.Eminent.usuarios.entity.Usuario;
@@ -29,7 +30,7 @@ public class UsuarioController {
      * si las credenciales son válidas.
      */
     @PostMapping("/auth/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         String token = service.login(request.getCorreo(), request.getContrasena());
         return ResponseEntity.ok(Map.of("token", token));
     }
@@ -40,7 +41,7 @@ public class UsuarioController {
      */
     @PostMapping("/usuarios")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UsuarioDTO> crear(@RequestBody UsuarioRequest usuario) {
+    public ResponseEntity<UsuarioDTO> crear(@Valid @RequestBody UsuarioRequest usuario) {
         return ResponseEntity.status(HttpStatus.CREATED).body(toDTO(service.crear(usuario)));
     }
 
@@ -86,7 +87,7 @@ public class UsuarioController {
      */
     @PutMapping("/usuarios/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UsuarioDTO> editar(@PathVariable Long id, @RequestBody UsuarioRequest datos) {
+    public ResponseEntity<UsuarioDTO> editar(@PathVariable Long id, @Valid @RequestBody UsuarioRequest datos) {
         return ResponseEntity.ok(toDTO(service.editar(id, datos)));
     }
 

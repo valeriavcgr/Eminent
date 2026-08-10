@@ -25,8 +25,9 @@ import java.util.regex.Pattern;
 @Service
 public class UsuarioService {
 
-    private static final Pattern PATRON_TELEFONO = Pattern.compile("^\\+?[0-9]{7,15}$");
-    private static final Pattern PATRON_CONTRASENA = Pattern.compile("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}$");
+    // El formato de teléfono y la fortaleza de la contraseña ya los valida
+    // UsuarioRequest vía Bean Validation (@Pattern); aquí solo queda lo que esas
+    // anotaciones no pueden cubrir: obligatoriedad al crear, unicidad y dominio del correo.
     private static final Pattern PATRON_CORREO_EMPRESA = Pattern.compile("^[A-Za-z0-9._%+-]+@eminent\\.com$",
             Pattern.CASE_INSENSITIVE);
 
@@ -72,16 +73,6 @@ public class UsuarioService {
                 datos.getContrasena() == null || datos.getContrasena().isBlank() ||
                 datos.getRoles() == null || datos.getRoles().isEmpty()) {
             throw new IllegalArgumentException("Todos los campos son obligatorios, incluyendo al menos un rol");
-        }
-
-        if (datos.getTelefono() != null && !datos.getTelefono().isBlank() &&
-                !PATRON_TELEFONO.matcher(datos.getTelefono()).matches()) {
-            throw new IllegalArgumentException("Formato de teléfono inválido. Use 3001234567");
-        }
-
-        if (!PATRON_CONTRASENA.matcher(datos.getContrasena()).matches()) {
-            throw new IllegalArgumentException(
-                    "La contraseña debe tener al menos 8 caracteres, una letra mayúscula, una minúscula y un dígito");
         }
 
         if (!PATRON_CORREO_EMPRESA.matcher(datos.getCorreo()).matches()) {
@@ -167,9 +158,6 @@ public class UsuarioService {
         if (datos.getApellido() != null)
             existente.setApellido(datos.getApellido());
         if (datos.getTelefono() != null) {
-            if (!datos.getTelefono().isBlank() && !PATRON_TELEFONO.matcher(datos.getTelefono()).matches()) {
-                throw new IllegalArgumentException("Formato de teléfono inválido. Use +573001234567 o 3001234567");
-            }
             existente.setTelefono(datos.getTelefono());
         }
         if (datos.getRoles() != null) {
@@ -181,10 +169,6 @@ public class UsuarioService {
         }
 
         if (datos.getContrasena() != null && !datos.getContrasena().isBlank()) {
-            if (!PATRON_CONTRASENA.matcher(datos.getContrasena()).matches()) {
-                throw new IllegalArgumentException(
-                        "La contraseña debe tener al menos 8 caracteres, una letra mayúscula, una minúscula y un dígito");
-            }
             existente.setContrasena(passwordEncoder.encode(datos.getContrasena()));
         }
 

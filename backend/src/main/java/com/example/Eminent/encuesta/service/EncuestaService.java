@@ -21,15 +21,9 @@ public class EncuestaService {
     @Autowired private EncuestaRepository encuestaRepo;
     @Autowired private AuditoriaService auditoriaService;
 
+    // El rango de calificación (1-5) y el largo máximo del comentario (300) ya los
+    // valida EncuestaDTO vía Bean Validation (@Min/@Max/@Size).
     public void registrar(EncuestaDTO datos) {
-        if (datos.getCalificacion() < 1 || datos.getCalificacion() > 5) {
-            throw new IllegalArgumentException("La calificación debe estar entre 1 y 5 estrellas");
-        }
-
-        if (datos.getComentario() != null && datos.getComentario().length() > 300) {
-            throw new IllegalArgumentException("El comentario no puede superar los 300 caracteres");
-        }
-
         Certificado certificado = certificadoRepo.findByCodigoUnico(datos.getCodigoUnico())
                 .orElseThrow(() -> new IllegalArgumentException("Certificado no encontrado"));
 

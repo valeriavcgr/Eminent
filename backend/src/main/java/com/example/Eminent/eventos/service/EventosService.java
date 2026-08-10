@@ -55,10 +55,6 @@ public class EventosService {
             throw new IllegalArgumentException("La fecha de fin debe ser igual o posterior a la fecha de inicio");
         }
 
-        if (dto.getAforo() <= 0) {
-            throw new IllegalArgumentException("El aforo debe ser un número entero mayor a cero");
-        }
-
         Evento evento = new Evento();
         evento.setNombre(dto.getNombre());
         evento.setTipo(Evento.Tipo.valueOf(dto.getTipo()));
@@ -158,10 +154,6 @@ public class EventosService {
             evento.setFechaFin(dto.getFechaFin());
         }
         if (dto.getAforo() != null) {
-            if (dto.getAforo() <= 0) {
-                throw new IllegalArgumentException("El aforo debe ser un número entero mayor a cero");
-            }
-
             long inscritosActivos = inscripcionRepository.countByEventoIdAndEstado(id, Inscripcion.Estado.ACTIVA);
             if (dto.getAforo() < inscritosActivos) {
                 throw new IllegalArgumentException("El aforo no puede ser menor a la cantidad de inscritos actuales");

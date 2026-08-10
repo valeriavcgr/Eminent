@@ -3,6 +3,7 @@ package com.example.Eminent.encuesta.controller;
 import com.example.Eminent.encuesta.dto.EncuestaComentarioDTO;
 import com.example.Eminent.encuesta.dto.EncuestaDTO;
 import com.example.Eminent.encuesta.service.EncuestaService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,7 +19,7 @@ public class EncuestaController {
     @Autowired private EncuestaService service;
 
     @PostMapping
-    public ResponseEntity<?> registrar(@RequestBody EncuestaDTO datos) {
+    public ResponseEntity<?> registrar(@Valid @RequestBody EncuestaDTO datos) {
         service.registrar(datos);
         return ResponseEntity.ok(Map.of("mensaje", "¡Gracias por tu opinión!"));
     }

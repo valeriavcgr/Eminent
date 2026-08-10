@@ -7,11 +7,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Handler global de excepciones para la API REST de Eminent.
@@ -78,6 +80,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                 "mensaje", ex.getMessage(),
                 "codigo", 404,
+                "timestamp", LocalDateTime.now()));
+    }
+
+    /**
+     * Maneja fallos de Bean Validation (@Valid) en el cuerpo de la petición.
+     * Retorna 400 Bad Request juntando los mensajes de cada campo inválido.
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<?> handleValidacion(MethodArgumentNotValidException ex) {
+        String mensaje = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.joining("; "));
+        return ResponseEntity.badRequest().body(Map.of(
+                "mensaje", mensaje,
+                "codigo", 400,
                 "timestamp", LocalDateTime.now()));
     }
 

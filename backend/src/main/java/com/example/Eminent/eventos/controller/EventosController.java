@@ -2,6 +2,7 @@ package com.example.Eminent.eventos.controller;
 
 import com.example.Eminent.auth.RolActivoResolver;
 import com.example.Eminent.eventos.dto.EventoDTO;
+import jakarta.validation.Valid;
 import com.example.Eminent.eventos.entity.Evento;
 import com.example.Eminent.eventos.entity.EventoMonitor;
 import com.example.Eminent.eventos.repository.EventoMonitorRepository;
@@ -63,7 +64,7 @@ public class EventosController {
      */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
-    public ResponseEntity<?> crear(@RequestBody EventoDTO dto) {
+    public ResponseEntity<?> crear(@Valid @RequestBody EventoDTO dto) {
         Usuario usuario = obtenerUsuarioActual();
         Evento creado = eventosService.crear(dto, usuario);
         return ResponseEntity.ok(toDTO(creado));
@@ -107,7 +108,7 @@ public class EventosController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
-    public ResponseEntity<?> editar(@PathVariable Long id, @RequestBody EventoDTO dto) {
+    public ResponseEntity<?> editar(@PathVariable Long id, @Valid @RequestBody EventoDTO dto) {
         Usuario usuario = obtenerUsuarioActual();
         Evento actualizado = eventosService.editar(id, dto, usuario);
         return ResponseEntity.ok(toDTO(actualizado));
