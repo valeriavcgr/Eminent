@@ -5,20 +5,25 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
 import java.util.List;
+
 // crea el token al iniciar sesion y lo lee para recordar la sesión
 
 @Component
 public class JwtUtil {
 
-    private final Key key = Keys.hmacShaKeyFor(
-            "clave-secreta-proyecto-eminent-caro".getBytes());
-    /** Tiempo de expiración del token en milisegundos (1 hora). */
+    private final Key key;
+    // Tiempo de expiración del token en milisegundos (1 hora)
     private final long EXPIRATION_MS = 3600000;
+
+    public JwtUtil(@Value("${jwt.secret}") String jwtSecret) {
+        this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+    }
 
     // devuelve el token
     public String generarToken(String correo, List<String> roles) {
@@ -42,8 +47,7 @@ public class JwtUtil {
         return validarYExtraer(token).getSubject();
     }
 
-    // Extrae la lista de roles del usuario almacenada en el claim "roles" del token
-    // JWT.
+    // Extrae la lista de roles del usuario
     @SuppressWarnings("unchecked")
     public List<String> extraerRoles(String token) {
         return validarYExtraer(token).get("roles", List.class);
