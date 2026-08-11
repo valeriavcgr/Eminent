@@ -68,7 +68,8 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/api/eventos/publicos/**",
                                 "/api/inscripciones/**",
-                                "/api/certificados/**"
+                                "/api/certificados/**",
+                                "/api/encuestas/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

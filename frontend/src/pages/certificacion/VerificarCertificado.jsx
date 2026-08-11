@@ -1,11 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { verificarCertificado } from '../../services/certificacionService';
-import { ShieldCheck, ShieldX, Search, ArrowLeft, Hash, QrCode, Clock, Calendar } from 'lucide-react';
+import { ShieldCheck, ShieldX, Search, ArrowLeft, Hash, QrCode, Clock, Calendar, Share2 } from 'lucide-react';
 import AuthLayout from '../../components/AuthLayout';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Html5QrcodeScanner } from 'html5-qrcode';
+
+function compartirEnLinkedIn(codigoUnico) {
+  const urlVerificacion = `${window.location.origin}/certificados/verificar?codigo=${codigoUnico}`;
+  const urlLinkedIn = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(urlVerificacion)}`;
+  window.open(urlLinkedIn, '_blank', 'width=600,height=600');
+}
 
 export default function VerificarCertificado() {
   const [searchParams] = useSearchParams();
@@ -199,6 +205,13 @@ export default function VerificarCertificado() {
                 : '-'}
             </p>
           </div>
+
+          <button
+            onClick={() => compartirEnLinkedIn(resultado.codigoUnico)}
+            className="w-full mt-4 py-2.5 bg-[#0A66C2] hover:bg-[#004182] text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
+          >
+            <Share2 className="w-4 h-4" /> Compartir en LinkedIn
+          </button>
         </div>
       )}
 

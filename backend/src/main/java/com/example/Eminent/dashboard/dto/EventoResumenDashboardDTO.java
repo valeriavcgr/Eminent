@@ -14,4 +14,5 @@ public class EventoResumenDashboardDTO {
     private long inscritos;
     private long asistieron;
     private double porcentajeAsistencia;
+    private Double promedioSatisfaccion; // null si nadie ha calificado ese evento
 }

@@ -13,6 +13,8 @@ export default function Login() {
   const { login: guardarSesion } = useAuth();
   const navigate = useNavigate();
 
+  const JERARQUIA = ['ADMIN', 'OPERADOR', 'MONITOR'];
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -21,22 +23,27 @@ export default function Login() {
     try {
       const token = await login(correo, contrasena);
       const payload = JSON.parse(atob(token.split('.')[1]));
-      guardarSesion(token, payload.rol);
-      if (payload.rol === 'MONITOR') {
-        navigate('/dashboard');
-      } else {
-        navigate('/dashboard');
+      const roles = payload.roles || [];
+      const rolActivoInicial = JERARQUIA.find((r) => roles.includes(r));
+
+      if (!rolActivoInicial) {
+        setError('Tu usuario no tiene roles asignados. Contacta a un administrador.');
+        return;
       }
+
+      guardarSesion(token, roles, rolActivoInicial);
+      navigate('/dashboard');
     } catch (err) {
-      setError('Correo o contraseña incorrectos. Por favor, verifica tus datos.');
+      const mensaje = err.response?.data?.mensaje || 'Correo o contraseña incorrectos. Por favor, verifica tus datos';
+      setError(mensaje);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <AuthLayout 
-      title="Bienvenido de nuevo" 
+    <AuthLayout
+      title="Bienvenido de nuevo"
       subtitle="Ingresa tus credenciales para acceder a tu panel de administración y gestionar tus eventos."
       imageSrc="https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=2000&q=80"
     >

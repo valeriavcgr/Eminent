@@ -40,6 +40,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             "(:tipo IS NULL OR e.tipo = :tipo) AND " +
             "(:modalidad IS NULL OR e.modalidad = :modalidad) AND " +
             "(:estado IS NULL OR e.estado = :estado) AND " +
+            "(:creadoPorId IS NULL OR e.creadoPor.id = :creadoPorId) AND " +
             "e.fechaInicio >= :fechaDesde AND e.fechaFin <= :fechaHasta " +
             "ORDER BY e.fechaInicio DESC")
     Page<Evento> buscarConFiltros(@Param("tipo") Evento.Tipo tipo,
@@ -47,5 +48,6 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                                                   @Param("estado") Evento.Estado estado,
                                                   @Param("fechaDesde") LocalDateTime fechaDesde,
                                                   @Param("fechaHasta") LocalDateTime fechaHasta,
+                                                  @Param("creadoPorId") Long creadoPorId,
                                                   Pageable pageable);
 }

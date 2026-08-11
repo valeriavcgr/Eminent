@@ -4,6 +4,7 @@ import com.example.Eminent.asistencia.entity.Asistencia;
 import com.example.Eminent.asistencia.repository.AsistenciaRepository;
 import com.example.Eminent.dashboard.dto.DashboardDTO;
 import com.example.Eminent.dashboard.dto.EventoResumenDashboardDTO;
+import com.example.Eminent.encuesta.repository.EncuestaRepository;
 import com.example.Eminent.eventos.entity.Evento;
 import com.example.Eminent.eventos.repository.EventoMonitorRepository;
 import com.example.Eminent.eventos.repository.EventoRepository;
@@ -27,20 +28,22 @@ public class DashboardService {
     @Autowired private InscripcionRepository inscripcionRepository;
     @Autowired private AsistenciaRepository asistenciaRepository;
     @Autowired private EventoMonitorRepository eventoMonitorRepository;
+    @Autowired private EncuestaRepository encuestaRepository;
 
     public DashboardDTO obtenerResumen(Evento.Tipo tipo, Evento.Modalidad modalidad, Evento.Estado estado,
-                                       LocalDateTime fechaDesde, LocalDateTime fechaHasta, Usuario usuario) {
+                                       LocalDateTime fechaDesde, LocalDateTime fechaHasta, Usuario usuario,
+                                       Usuario.Rol rolActivo) {
 
         LocalDateTime desde = (fechaDesde != null) ? fechaDesde : LocalDateTime.of(2000, 1, 1, 0, 0);
         LocalDateTime hasta = (fechaHasta != null) ? fechaHasta : LocalDateTime.of(2100, 1, 1, 0, 0);
 
-        List<Evento> eventos = eventoRepository.buscarConFiltros(tipo, modalidad, estado, desde, hasta, Pageable.unpaged()).getContent();
+        List<Evento> eventos = eventoRepository.buscarConFiltros(tipo, modalidad, estado, desde, hasta, null, Pageable.unpaged()).getContent();
 
-        if (usuario.getRol() == Usuario.Rol.OPERADOR) {
+        if (rolActivo == Usuario.Rol.OPERADOR) {
             eventos = eventos.stream()
                     .filter(e -> e.getCreadoPor().getId().equals(usuario.getId()))
                     .toList();
-        } else if (usuario.getRol() == Usuario.Rol.MONITOR) {
+        } else if (rolActivo == Usuario.Rol.MONITOR) {
             List<Long> idsAsignados = eventoMonitorRepository.findByMonitor_Id(usuario.getId()).stream()
                     .map(em -> em.getEvento().getId())
                     .toList();
@@ -85,6 +88,7 @@ public class DashboardService {
             resumen.setInscritos(inscritosEvento);
             resumen.setAsistieron(asistieronEvento);
             resumen.setPorcentajeAsistencia(inscritosEvento > 0 ? (asistieronEvento * 100.0 / inscritosEvento) : 0);
+            resumen.setPromedioSatisfaccion(encuestaRepository.promedioPorEvento(evento.getId()));
             detalle.add(resumen);
         }
 
@@ -98,6 +102,7 @@ public class DashboardService {
         dto.setPorcentajeAforoOcupado(aforoTotal > 0 ? (inscritosActivosTotal * 100.0 / aforoTotal) : 0);
         dto.setPorcentajeAsistenciaSobreInscritos(inscritosActivosTotal > 0 ? (asistieronTotal * 100.0 / inscritosActivosTotal) : 0);
         dto.setDetalleEventos(detalle);
+        dto.setPromedioSatisfaccionGeneral(encuestaRepository.promedioGeneral());
 
         return dto;
     }

@@ -1,7 +1,9 @@
 package com.example.Eminent.usuarios.controller;
 
 import com.example.Eminent.usuarios.dto.LoginRequest;
+import jakarta.validation.Valid;
 import com.example.Eminent.usuarios.dto.UsuarioDTO;
+import com.example.Eminent.usuarios.dto.UsuarioRequest;
 import com.example.Eminent.usuarios.entity.Usuario;
 import com.example.Eminent.usuarios.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,11 +12,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 
 @RestController
@@ -28,7 +30,7 @@ public class UsuarioController {
      * si las credenciales son válidas.
      */
     @PostMapping("/auth/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         String token = service.login(request.getCorreo(), request.getContrasena());
         return ResponseEntity.ok(Map.of("token", token));
     }
@@ -39,7 +41,7 @@ public class UsuarioController {
      */
     @PostMapping("/usuarios")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UsuarioDTO> crear(@RequestBody Usuario usuario) {
+    public ResponseEntity<UsuarioDTO> crear(@Valid @RequestBody UsuarioRequest usuario) {
         return ResponseEntity.status(HttpStatus.CREATED).body(toDTO(service.crear(usuario)));
     }
 
@@ -64,13 +66,19 @@ public class UsuarioController {
     }
 
     /**
-     * Elimina un usuario por su ID. Solo accesible por ADMIN.
+     * Obtiene los datos del propio usuario autenticado, para la pantalla "Mi Perfil".
+     * Solo accesible por ADMIN (es el único rol que puede crear/editar usuarios y, por lo
+     * tanto, editarse a sí mismo).
      */
-    @DeleteMapping("/usuarios/{id}")
+    @GetMapping("/usuarios/yo")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> eliminar(@PathVariable Long id) {
-        service.eliminar(id);
-        return ResponseEntity.ok(Map.of("mensaje", "Usuario eliminado correctamente"));
+    public ResponseEntity<UsuarioDTO> obtenerActual() {
+        return ResponseEntity.ok(toDTO(usuarioActual()));
+    }
+
+    private Usuario usuarioActual() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return service.obtenerPorCorreo(auth.getName());
     }
 
     /**
@@ -79,7 +87,7 @@ public class UsuarioController {
      */
     @PutMapping("/usuarios/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UsuarioDTO> editar(@PathVariable Long id, @RequestBody Usuario datos) {
+    public ResponseEntity<UsuarioDTO> editar(@PathVariable Long id, @Valid @RequestBody UsuarioRequest datos) {
         return ResponseEntity.ok(toDTO(service.editar(id, datos)));
     }
 
@@ -89,7 +97,7 @@ public class UsuarioController {
     @PatchMapping("/usuarios/{id}/estado")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UsuarioDTO> cambiarEstado(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        return ResponseEntity.ok(toDTO(service.cambiarEstado(id, body.get("estado"))));
+        return ResponseEntity.ok(toDTO(service.cambiarEstado(id, body.get("estado"), usuarioActual().getId())));
     }
 
     /** Convierte una entidad Usuario a su dto correspondiente para la respuesta API. */
@@ -100,7 +108,7 @@ public class UsuarioController {
         dto.setApellido(u.getApellido());
         dto.setCorreo(u.getCorreo());
         dto.setTelefono(u.getTelefono());
-        dto.setRol(u.getRol().name());
+        dto.setRoles(u.getRoles().stream().map(r -> r.getNombre().name()).sorted().toList());
         dto.setEstado(u.getEstado().name());
         dto.setFechaCreacion(u.getFechaCreacion());
         return dto;

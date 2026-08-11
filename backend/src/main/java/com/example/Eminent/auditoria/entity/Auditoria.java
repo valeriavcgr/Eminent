@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import java.time.LocalDateTime;
 import com.example.Eminent.usuarios.entity.Usuario;
 
@@ -14,20 +16,21 @@ import com.example.Eminent.usuarios.entity.Usuario;
 @NoArgsConstructor
 public class Auditoria {
 
-    /** Identificador único autogenerado del registro de auditoría. */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Usuario que realizó la acción. Puede ser null para acciones automáticas del sistema.
-     *  Se resuelve con fetch LAZY. */
+    /** Usuario que realizó la acción. Puede ser null para acciones automáticas del sistema,
+     *  o para acciones de un usuario que ya fue eliminado (el registro de auditoría se conserva
+     *  y pasa a atribuirse a "Sistema"). Se resuelve con fetch LAZY. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = true)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     private Usuario usuario;
 
-    /** Tipos de acciones que se registran en el auditoría: CREAR, EDITAR, DESACTIVAR, CANCELAR, VER. */
+    /** Tipos de acciones que se registran en la auditoría */
     public enum Accion {
-        CREAR, EDITAR, DESACTIVAR, CANCELAR, VER
+        CREAR, EDITAR, DESACTIVAR, CANCELAR, VER, LOGIN_EXITOSO, LOGIN_FALLIDO
     }
 
     /** Acción que se realizó sobre la entidad afectada. No puede ser nulo. */
@@ -36,9 +39,9 @@ public class Auditoria {
     private Accion accion;
 
     /** Tipos de entidades que pueden ser afectadas por una acción: USUARIO, EVENTO, PARTICIPANTE,
-     *  INSCRIPCION, ASISTENCIA, CERTIFICADO. */
+     *  INSCRIPCION, ASISTENCIA, CERTIFICADO, ENCUESTA. */
     public enum TipoAfectado {
-        USUARIO, EVENTO, PARTICIPANTE, INSCRIPCION, ASISTENCIA, CERTIFICADO
+        USUARIO, EVENTO, PARTICIPANTE, INSCRIPCION, ASISTENCIA, CERTIFICADO, ENCUESTA
     }
 
     /** Tipo de entidad a la que se aplicó la acción. No puede ser nulo. */

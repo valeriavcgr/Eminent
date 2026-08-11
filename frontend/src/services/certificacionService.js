@@ -5,6 +5,11 @@ export async function listarEventosFinalizados() {
   return response.data;
 }
 
+export async function obtenerInfoCertificado(documento, eventoId) {
+  const response = await api.get('/certificados/info', { params: { documento, eventoId } });
+  return response.data;
+}
+
 export async function descargarCertificado(documento, eventoId) {
   const response = await api.get('/certificados/descargar', {
     params: { documento, eventoId },

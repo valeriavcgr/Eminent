@@ -30,11 +30,11 @@ public class AsistenciaService {
 
     private static final Pattern PATRON_QR = Pattern.compile("^INSCRIPCION-(\\d+)-.*$");
 
-    public ListadoAsistenciaDTO listarParticipantes(Long eventoId, Usuario usuario) {
+    public ListadoAsistenciaDTO listarParticipantes(Long eventoId, Usuario usuario, Usuario.Rol rolActivo) {
         Evento evento = eventoRepo.findById(eventoId)
                 .orElseThrow(() -> new IllegalArgumentException("Evento no encontrado"));
 
-        if (usuario.getRol() == Usuario.Rol.MONITOR) {
+        if (rolActivo == Usuario.Rol.MONITOR) {
             validarMonitorAsignado(eventoId, usuario.getId());
         }
 

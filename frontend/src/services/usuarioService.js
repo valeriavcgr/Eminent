@@ -16,6 +16,11 @@ export async function obtenerUsuario(id) {
   return response.data;
 }
 
+export async function obtenerUsuarioActual() {
+  const response = await api.get('/usuarios/yo');
+  return response.data;
+}
+
 export async function editarUsuario(id, datos) {
   const response = await api.put(`/usuarios/${id}`, datos);
   return response.data;

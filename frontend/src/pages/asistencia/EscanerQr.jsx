@@ -5,13 +5,11 @@ import { registrarAsistenciaPorQr } from '../../services/asistenciaService';
 import { Button } from '../../components/ui/Button';
 import { ArrowLeft, CheckCircle2, XCircle, Camera, StopCircle, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '../../context/AuthContext';
 
 export default function EscanerQr() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { rol } = useAuth();
-  
+
   const [mensaje, setMensaje] = useState('');
   const [tipoMensaje, setTipoMensaje] = useState('');
   const [mostrarOverlay, setMostrarOverlay] = useState(false);

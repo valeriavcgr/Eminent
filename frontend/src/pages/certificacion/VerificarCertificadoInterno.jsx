@@ -7,8 +7,14 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Ca
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import {
-  ShieldCheck, ShieldX, Search, User, Calendar, CalendarDays, Clock, Hash, QrCode, X
+  ShieldCheck, ShieldX, Search, User, Calendar, CalendarDays, Clock, Hash, QrCode, X, Share2
 } from 'lucide-react';
+
+function compartirEnLinkedIn(codigoUnico) {
+  const urlVerificacion = `${window.location.origin}/certificados/verificar?codigo=${codigoUnico}`;
+  const urlLinkedIn = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(urlVerificacion)}`;
+  window.open(urlLinkedIn, '_blank', 'width=600,height=600');
+}
 
 export default function VerificarCertificadoInterno() {
   const [searchParams] = useSearchParams();
@@ -131,6 +137,13 @@ export default function VerificarCertificadoInterno() {
                 <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-slate-400" /> {resultado.duracionHoras} horas</div>
                 <div className="flex items-center gap-2"><Hash className="w-4 h-4 text-slate-400" /> {resultado.codigoUnico}</div>
               </div>
+
+              <button
+                onClick={() => compartirEnLinkedIn(resultado.codigoUnico)}
+                className="w-full mt-4 py-2 bg-[#0A66C2] hover:bg-[#004182] text-white rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
+              >
+                <Share2 className="w-4 h-4" /> Compartir en LinkedIn
+              </button>
             </div>
           )}
         </CardContent>
