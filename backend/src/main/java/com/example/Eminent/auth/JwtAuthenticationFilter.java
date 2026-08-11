@@ -31,9 +31,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (jwtUtil.esValido(token)) {
                 String correo = jwtUtil.extraerCorreo(token);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(correo);
-                UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                SecurityContextHolder.getContext().setAuthentication(auth);
+                if (userDetails.isEnabled()) {
+                    UsernamePasswordAuthenticationToken auth =
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                }
+                // Si el usuario fue desactivado, se deja la petición sin autenticar:
+                // el token sigue siendo válido, pero Spring Security la rechazará como no autorizada.
             }
         }
         chain.doFilter(request, response);

@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -210,6 +211,10 @@ public class UsuarioService {
     public String login(String correo, String contrasena) {
         try {
             authManager.authenticate(new UsernamePasswordAuthenticationToken(correo, contrasena));
+        } catch (DisabledException e) {
+            auditoriaService.registrar(null, Auditoria.Accion.LOGIN_FALLIDO, Auditoria.TipoAfectado.USUARIO,
+                    null, "Intento de inicio de sesión de usuario inactivo: " + correo, null);
+            throw e;
         } catch (Exception e) {
             auditoriaService.registrar(null, Auditoria.Accion.LOGIN_FALLIDO, Auditoria.TipoAfectado.USUARIO,
                     null, "Intento de inicio de sesión fallido para el correo: " + correo, null);

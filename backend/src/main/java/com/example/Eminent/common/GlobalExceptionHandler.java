@@ -18,7 +18,8 @@ import java.util.stream.Collectors;
 /**
  * Handler global de excepciones para la API REST de Eminent.
  * Captura excepciones de autenticación, autorización y argumentos inválidos,
- * devolviendo respuestas JSON estructuradas con código HTTP y mensaje descriptivo.
+ * devolviendo respuestas JSON estructuradas con código HTTP y mensaje
+ * descriptivo.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -37,12 +38,13 @@ public class GlobalExceptionHandler {
 
     /**
      * Maneja intentos de acceso de usuarios inactivos.
-     * Retorna 401 Unauthorized indicando que el usuario debe contactar al administrador.
+     * Retorna 401 Unauthorized indicando que el usuario debe contactar al
+     * administrador.
      */
     @ExceptionHandler(DisabledException.class)
     public ResponseEntity<?> handleDisabled(DisabledException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
-                "mensaje", "Usuario inactivo, contacte al administrador",
+                "mensaje", "Usuario inactivo",
                 "codigo", 401,
                 "timestamp", LocalDateTime.now()));
     }
@@ -72,8 +74,10 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Maneja búsquedas de entidades inexistentes (por ejemplo, un evento o usuario con un id
-     * que ya no existe). Retorna 404 Not Found en vez de dejar que se propague como 500.
+     * Maneja búsquedas de entidades inexistentes (por ejemplo, un evento o usuario
+     * con un id
+     * que ya no existe). Retorna 404 Not Found en vez de dejar que se propague como
+     * 500.
      */
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<?> handleEntityNotFound(EntityNotFoundException ex) {
@@ -99,15 +103,19 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Maneja violaciones de integridad referencial (por ejemplo, intentar eliminar un usuario
-     * que sigue siendo referenciado por eventos que creó o asistencias que registró).
-     * Retorna 409 Conflict con un mensaje claro en vez de dejar que la excepción de base de
+     * Maneja violaciones de integridad referencial (por ejemplo, intentar eliminar
+     * un usuario
+     * que sigue siendo referenciado por eventos que creó o asistencias que
+     * registró).
+     * Retorna 409 Conflict con un mensaje claro en vez de dejar que la excepción de
+     * base de
      * datos se propague sin manejar.
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<?> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
-                "mensaje", "No se puede completar la operación porque el registro tiene datos asociados (eventos, asistencias u otros) que dependen de él",
+                "mensaje",
+                "No se puede completar la operación porque el registro tiene datos asociados (eventos, asistencias u otros) que dependen de él",
                 "codigo", 409,
                 "timestamp", LocalDateTime.now()));
     }

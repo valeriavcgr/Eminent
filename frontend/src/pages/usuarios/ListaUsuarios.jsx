@@ -3,10 +3,11 @@ import { listarUsuarios, cambiarEstadoUsuario } from '../../services/usuarioServ
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
-import { Search, Plus, Edit2, ShieldOff, ShieldCheck, Filter } from 'lucide-react';
+import { Search, Plus, Edit2, ShieldOff, ShieldCheck, Filter, AlertTriangle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
+import { Modal } from '../../components/ui/Modal';
 import Pagination from '../../components/Pagination';
 
 export default function ListaUsuarios() {
@@ -18,6 +19,8 @@ export default function ListaUsuarios() {
   const { token } = useAuth();
   const [paginaActual, setPaginaActual] = useState(1);
   const FILAS_POR_PAGINA = 10;
+  const [estadoModalOpen, setEstadoModalOpen] = useState(false);
+  const [usuarioParaCambiarEstado, setUsuarioParaCambiarEstado] = useState(null);
 
   let currentUserEmail = '';
   if (token) {
@@ -49,11 +52,20 @@ export default function ListaUsuarios() {
     }
   };
 
-  const toggleEstado = async (u) => {
+  const abrirModalEstado = (u) => {
+    setUsuarioParaCambiarEstado(u);
+    setEstadoModalOpen(true);
+  };
+
+  const confirmarCambioEstado = async () => {
+    if (!usuarioParaCambiarEstado) return;
+    const u = usuarioParaCambiarEstado;
     const nuevoEstado = u.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
     try {
       await cambiarEstadoUsuario(u.id, nuevoEstado);
       toast.success(`Usuario ${u.nombre} ha sido ${nuevoEstado === 'ACTIVO' ? 'activado' : 'desactivado'}`);
+      setEstadoModalOpen(false);
+      setUsuarioParaCambiarEstado(null);
       cargarUsuarios();
     } catch (error) {
       toast.error('Error al cambiar el estado del usuario');
@@ -180,7 +192,7 @@ export default function ListaUsuarios() {
                               size="sm"
                               className={u.estado === 'ACTIVO' ? 'text-red-600 hover:text-red-700 hover:bg-red-50' : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'}
                               icon={u.estado === 'ACTIVO' ? ShieldOff : ShieldCheck}
-                              onClick={() => toggleEstado(u)}
+                              onClick={() => abrirModalEstado(u)}
                               title={u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'}
                             />
                           )}
@@ -199,6 +211,42 @@ export default function ListaUsuarios() {
           />
         </CardContent>
       </Card>
+
+      <Modal
+        isOpen={estadoModalOpen}
+        onClose={() => setEstadoModalOpen(false)}
+        title={usuarioParaCambiarEstado?.estado === 'ACTIVO' ? 'Desactivar Usuario' : 'Activar Usuario'}
+      >
+        <div className="flex flex-col items-center text-center space-y-4">
+          <div className={`p-3 rounded-full ${usuarioParaCambiarEstado?.estado === 'ACTIVO' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
+            <AlertTriangle className="w-8 h-8" />
+          </div>
+          <p className="text-slate-700">
+            ¿Estás seguro de que deseas {usuarioParaCambiarEstado?.estado === 'ACTIVO' ? 'desactivar' : 'activar'} a{' '}
+            <strong>{usuarioParaCambiarEstado?.nombre} {usuarioParaCambiarEstado?.apellido}</strong>?
+          </p>
+          <p className="text-sm text-slate-500">
+            {usuarioParaCambiarEstado?.estado === 'ACTIVO'
+              ? 'El usuario no podrá iniciar sesión hasta que sea activado nuevamente.'
+              : 'El usuario podrá volver a iniciar sesión en el sistema.'}
+          </p>
+          <div className="flex w-full gap-3 mt-4">
+            <Button
+              variant="secondary"
+              className="flex-1"
+              onClick={() => setEstadoModalOpen(false)}
+            >
+              Cerrar
+            </Button>
+            <Button
+              className={`flex-1 text-white ${usuarioParaCambiarEstado?.estado === 'ACTIVO' ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+              onClick={confirmarCambioEstado}
+            >
+              {usuarioParaCambiarEstado?.estado === 'ACTIVO' ? 'Sí, Desactivar' : 'Sí, Activar'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { obtenerUsuarioActual, editarUsuario } from '../../services/usuarioService';
 import { toast } from 'sonner';
-import { Save, User, Mail, Lock, Phone, UserCircle } from 'lucide-react';
+import { Save, X, User, Mail, Lock, Phone, UserCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 
@@ -188,6 +188,15 @@ export default function Perfil() {
               </div>
 
               <div className="pt-6 border-t border-slate-200 flex items-center justify-end gap-3">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  icon={X}
+                  onClick={() => navigate(-1)}
+                  disabled={isSubmitting}
+                >
+                  Cancelar
+                </Button>
                 <Button
                   type="submit"
                   variant="primary"

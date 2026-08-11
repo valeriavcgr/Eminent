@@ -3,7 +3,6 @@ package com.example.Eminent.auth;
 import com.example.Eminent.usuarios.entity.Usuario;
 import com.example.Eminent.usuarios.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -26,17 +25,22 @@ public class CustomUserDetailsService implements UserDetailsService {
         Usuario usuario = usuarioRepository.findByCorreo(correo)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
 
-        if (!"ACTIVO".equals(usuario.getEstado().name())) {
-            throw new DisabledException("Usuario inactivo");
-        }
-
         List<GrantedAuthority> authorities = usuario.getRoles().stream()
                 .map(r -> (GrantedAuthority) new SimpleGrantedAuthority("ROLE_" + r.getNombre().name()))
                 .collect(Collectors.toList());
 
+        boolean habilitado = "ACTIVO".equals(usuario.getEstado().name());
+
+        // enabled=habilitado deja que Spring Security lance DisabledException por su cuenta
+        // (fuera del bloque que envuelve loadUserByUsername en InternalAuthenticationServiceException),
+        // para que el mensaje de "usuario inactivo" llegue intacto al cliente.
         return new org.springframework.security.core.userdetails.User(
                 usuario.getCorreo(),
                 usuario.getContrasena(),
+                habilitado,
+                true,
+                true,
+                true,
                 authorities
         );
     }
