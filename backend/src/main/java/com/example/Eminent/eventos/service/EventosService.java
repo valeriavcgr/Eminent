@@ -54,6 +54,10 @@ public class EventosService {
         if (dto.getFechaFin().isBefore(dto.getFechaInicio())) {
             throw new IllegalArgumentException("La fecha de fin debe ser igual o posterior a la fecha de inicio");
         }
+        //validacion de que un evento solo puede ser de un día, en el futuro manejarlo de varios días
+        if (!dto.getFechaInicio().toLocalDate().equals(dto.getFechaFin().toLocalDate())) {
+            throw new IllegalArgumentException("El evento debe iniciar y finalizar el mismo día (no se admiten eventos de varios días en esta versión)");
+        }
 
         Evento evento = new Evento();
         evento.setNombre(dto.getNombre());
@@ -160,6 +164,9 @@ public class EventosService {
             }
 
             evento.setAforo(dto.getAforo());
+        }
+        if (!evento.getFechaInicio().toLocalDate().equals(evento.getFechaFin().toLocalDate())) {
+            throw new IllegalArgumentException("El evento debe iniciar y finalizar el mismo día (no se admiten eventos de varios días por ahora)");
         }
 
         Evento actualizado = eventoRepository.save(evento);

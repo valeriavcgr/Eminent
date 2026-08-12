@@ -75,6 +75,10 @@ export default function FormularioEvento() {
       toast.error('La fecha de fin debe ser posterior a la fecha de inicio');
       return false;
     }
+    if (format(fInicio, 'yyyy-MM-dd') !== format(fFin, 'yyyy-MM-dd')) {
+      toast.error('El evento debe iniciar y finalizar el mismo día (no se admiten eventos de varios días por ahora)');
+      return false;
+}
 
     if (Number(form.aforo) < 1) {
       toast.error('El aforo debe ser mayor a 0');
