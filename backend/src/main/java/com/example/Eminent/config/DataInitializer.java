@@ -24,7 +24,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,11 +68,11 @@ public class DataInitializer implements CommandLineRunner {
     private static final int[] CALIFICACIONES_ENCUESTA = { 5, 4, 5, 4, 5, 5, 3, 4, 5, 4 };
 
     public DataInitializer(UsuarioRepository usuarioRepository, RolRepository rolRepository, JdbcTemplate jdbcTemplate,
-            PasswordEncoder passwordEncoder,
-            EventoRepository eventoRepository, EventoMonitorRepository eventoMonitorRepository,
-            ParticipanteRepository participanteRepository, InscripcionRepository inscripcionRepository,
-            AsistenciaRepository asistenciaRepository, QrService qrService,
-            CertificacionService certificacionService, EncuestaRepository encuestaRepository) {
+                           PasswordEncoder passwordEncoder,
+                           EventoRepository eventoRepository, EventoMonitorRepository eventoMonitorRepository,
+                           ParticipanteRepository participanteRepository, InscripcionRepository inscripcionRepository,
+                           AsistenciaRepository asistenciaRepository, QrService qrService,
+                           CertificacionService certificacionService, EncuestaRepository encuestaRepository) {
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.jdbcTemplate = jdbcTemplate;
@@ -142,22 +144,12 @@ public class DataInitializer implements CommandLineRunner {
         jdbcTemplate.execute("ALTER TABLE evento ADD CONSTRAINT evento_aforo_check CHECK (aforo > 0)");
     }
 
-    /**
-     * Mismo caso que {@link #repararCheckAforoEvento()}, para la calificación de
-     * encuestas.
-     */
     private void repararCheckCalificacionEncuesta() {
         jdbcTemplate.execute("ALTER TABLE encuesta DROP CONSTRAINT IF EXISTS encuesta_calificacion_check");
         jdbcTemplate.execute(
                 "ALTER TABLE encuesta ADD CONSTRAINT encuesta_calificacion_check CHECK (calificacion BETWEEN 1 AND 5)");
     }
 
-    /**
-     * Impide a nivel de BD que un mismo participante quede inscrito dos veces al
-     * mismo evento;
-     * hoy solo se valida en {@code ParticipacionService}. Idempotente igual que las
-     * anteriores.
-     */
     private void repararUniqueInscripcionParticipanteEvento() {
         jdbcTemplate
                 .execute("ALTER TABLE inscripcion DROP CONSTRAINT IF EXISTS inscripcion_participante_evento_unique");
@@ -165,24 +157,12 @@ public class DataInitializer implements CommandLineRunner {
                 "ALTER TABLE inscripcion ADD CONSTRAINT inscripcion_participante_evento_unique UNIQUE (participante_id, evento_id)");
     }
 
-    /**
-     * Puebla el catálogo de roles (tabla `roles`) con los tres valores fijos del
-     * sistema, si no existen.
-     */
     private void sembrarCatalogoRoles() {
         for (Usuario.Rol nombre : Usuario.Rol.values()) {
             rolRepository.findByNombre(nombre).orElseGet(() -> rolRepository.save(new Rol(nombre)));
         }
     }
 
-    /**
-     * Migración idempotente: copia el valor de la columna legada `usuario.rol`
-     * (leída vía
-     * {@code rolLegado}) hacia la nueva tabla `usuario_roles` para cualquier
-     * usuario que aún
-     * no tenga roles asignados. No hace nada en arranques posteriores una vez
-     * migrado.
-     */
     private void migrarRolUnicoAUsuarioRoles() {
         List<Usuario> usuarios = usuarioRepository.findAll();
         int migrados = 0;
@@ -213,7 +193,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void crearOActualizarUsuarioSeed(String correo, String nombre, String apellido, String contrasena,
-            String telefono, Usuario.Rol... roles) {
+                                             String telefono, Usuario.Rol... roles) {
         Usuario usuario = usuarioRepository.findByCorreo(correo).orElse(null);
         if (usuario == null) {
             usuario = new Usuario();
@@ -276,12 +256,16 @@ public class DataInitializer implements CommandLineRunner {
                 "Torneo de Preguntados Virtual"
         };
 
-        int contadorDocumento = 900000001; // arranca en un documento base, único y creciente
+        int contadorDocumento = 900000001;
 
-        // --- 6 eventos FINALIZADOS (fechas en el pasado) ---
+        // --- 6 eventos FINALIZADOS (un mismo día, horas distintas) ---
         for (int j = 0; j < 6; j++) {
-            LocalDateTime inicio = LocalDateTime.now().minusDays(20 - j * 2).withHour(9).withMinute(0);
-            LocalDateTime fin = inicio.plusHours(4);
+            LocalDate diaEvento = LocalDate.now().minusDays(20 - j * 2);
+            LocalTime horaInicio = LocalTime.of(8 + (j % 4), 0); // Ej: 08:00, 09:00, 10:00, 11:00
+            LocalTime horaFin = horaInicio.plusHours(3);          // Duración fija de 3 horas el mismo día
+
+            LocalDateTime inicio = LocalDateTime.of(diaEvento, horaInicio);
+            LocalDateTime fin = LocalDateTime.of(diaEvento, horaFin);
 
             Evento evento = crearEvento(
                     nombresFinalizados[j],
@@ -293,14 +277,17 @@ public class DataInitializer implements CommandLineRunner {
 
             contadorDocumento = sembrarParticipantesDelEvento(evento, contadorDocumento, true, monitorAsignado);
 
-            // Dispara la generación real de certificados para los que sí asistieron
             certificacionService.generarCertificadosDeEvento(evento);
         }
 
-        // eventos PROGRAMADOS (fechas en el futuro)
+        // --- 6 eventos PROGRAMADOS (un mismo día, horas distintas) ---
         for (int j = 0; j < 6; j++) {
-            LocalDateTime inicio = LocalDateTime.now().plusDays(10 + j * 2).withHour(9).withMinute(0);
-            LocalDateTime fin = inicio.plusHours(4);
+            LocalDate diaEvento = LocalDate.now().plusDays(10 + j * 2);
+            LocalTime horaInicio = LocalTime.of(9 + (j % 3), 0); // Ej: 09:00, 10:00, 11:00
+            LocalTime horaFin = horaInicio.plusHours(4);          // Duración fija de 4 horas el mismo día
+
+            LocalDateTime inicio = LocalDateTime.of(diaEvento, horaInicio);
+            LocalDateTime fin = LocalDateTime.of(diaEvento, horaFin);
 
             Evento evento = crearEvento(
                     nombresProgramados[j],
@@ -313,11 +300,11 @@ public class DataInitializer implements CommandLineRunner {
             contadorDocumento = sembrarParticipantesDelEvento(evento, contadorDocumento, false, monitorAsignado);
         }
 
-        System.out.println("Semilla masiva completada: 4 usuarios, 12 eventos, 120 participantes, 24 encuestas.");
+        System.out.println("Semilla masiva completada: 4 usuarios, 12 eventos de un día, 120 participantes, 24 encuestas.");
     }
 
     private Evento crearEvento(String nombre, Evento.Tipo tipo, Evento.Modalidad modalidad,
-            LocalDateTime inicio, LocalDateTime fin, Evento.Estado estado, Usuario creadoPor) {
+                               LocalDateTime inicio, LocalDateTime fin, Evento.Estado estado, Usuario creadoPor) {
         Evento evento = new Evento();
         evento.setNombre(nombre);
         evento.setTipo(tipo);
@@ -325,7 +312,7 @@ public class DataInitializer implements CommandLineRunner {
         evento.setDescripcion("Evento de prueba generado por la semilla de datos.");
         evento.setFechaInicio(inicio);
         evento.setFechaFin(fin);
-        evento.setAforo(15); // 10 invitados usados, deja 5 cupos libres
+        evento.setAforo(15);
         evento.setEstado(estado);
         evento.setCreadoPor(creadoPor);
         return eventoRepository.save(evento);
@@ -339,7 +326,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private int sembrarParticipantesDelEvento(Evento evento, int contadorDocumentoInicial,
-            boolean marcarAsistencia, Usuario monitorParaAsistencia) throws Exception {
+                                              boolean marcarAsistencia, Usuario monitorParaAsistencia) throws Exception {
         int contadorDocumento = contadorDocumentoInicial;
 
         for (int k = 0; k < 10; k++) {
@@ -368,7 +355,6 @@ public class DataInitializer implements CommandLineRunner {
             inscripcion.setContenidoQr(qr[1]);
             inscripcionRepository.save(inscripcion);
 
-            // Solo en eventos finalizados: la mitad (los primeros 5) sí asistió
             if (marcarAsistencia && k < 5) {
                 Asistencia asistencia = new Asistencia();
                 asistencia.setInscripcion(inscripcion);
@@ -377,7 +363,6 @@ public class DataInitializer implements CommandLineRunner {
                 asistencia.setRegistradoPor(monitorParaAsistencia);
                 asistencia = asistenciaRepository.save(asistencia);
 
-                // De cada 5 asistentes, 4 responden la encuesta de satisfacción
                 if (k < 4) {
                     int idx = (int) ((evento.getId() + k) % COMENTARIOS_ENCUESTA.length);
                     Encuesta encuesta = new Encuesta();
