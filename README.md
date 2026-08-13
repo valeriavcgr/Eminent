@@ -67,7 +67,7 @@ verificables.
 ## Requisitos previos
 
 - **Java 21** y **Maven**
-- **Node.js 20+** y **npm**
+- **Node.js 20+** y **pnpm**
 - **PostgreSQL** corriendo localmente
 
 ---
@@ -115,8 +115,8 @@ El backend queda disponible en `http://localhost:8080`.
 
 ```bash
 cd frontend
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 El frontend queda disponible en `http://localhost:5173`.
