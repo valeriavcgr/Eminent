@@ -113,7 +113,10 @@ export default function Layout() {
                 <div className={`w-2 h-2 rounded-full shrink-0 ${getRoleColor()}`}></div>
                 <select
                   value={rolActivo}
-                  onChange={(e) => cambiarRolActivo(e.target.value)}
+                  onChange={(e) => {
+                    cambiarRolActivo(e.target.value);
+                    navigate('/dashboard');
+                  }}
                   className="w-full bg-transparent text-sm font-medium text-white focus:outline-none cursor-pointer"
                 >
                   {roles.map((r) => (

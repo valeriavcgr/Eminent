@@ -64,8 +64,11 @@ public class EventosController {
      */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
-    public ResponseEntity<?> crear(@Valid @RequestBody EventoDTO dto) {
+    public ResponseEntity<?> crear(
+            @Valid @RequestBody EventoDTO dto,
+            @RequestHeader(value = RolActivoResolver.HEADER, required = false) String rolActivoHeader) {
         Usuario usuario = obtenerUsuarioActual();
+        exigirRolActivoAdminOperador(usuario, rolActivoHeader);
         Evento creado = eventosService.crear(dto, usuario);
         return ResponseEntity.ok(toDTO(creado));
     }
@@ -108,16 +111,24 @@ public class EventosController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
-    public ResponseEntity<?> editar(@PathVariable Long id, @Valid @RequestBody EventoDTO dto) {
+    public ResponseEntity<?> editar(
+            @PathVariable Long id,
+            @Valid @RequestBody EventoDTO dto,
+            @RequestHeader(value = RolActivoResolver.HEADER, required = false) String rolActivoHeader) {
         Usuario usuario = obtenerUsuarioActual();
+        exigirRolActivoAdminOperador(usuario, rolActivoHeader);
         Evento actualizado = eventosService.editar(id, dto, usuario);
         return ResponseEntity.ok(toDTO(actualizado));
     }
 
     @PostMapping("/{id}/monitores")
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
-    public ResponseEntity<?> asignarMonitor(@PathVariable Long id, @RequestParam Long monitorId) {
+    public ResponseEntity<?> asignarMonitor(
+            @PathVariable Long id,
+            @RequestParam Long monitorId,
+            @RequestHeader(value = RolActivoResolver.HEADER, required = false) String rolActivoHeader) {
         Usuario usuario = obtenerUsuarioActual();
+        exigirRolActivoAdminOperador(usuario, rolActivoHeader);
         EventoMonitor asignacion = eventosService.asignarMonitor(id, monitorId, usuario);
         return ResponseEntity.ok(Map.of(
                 "eventoId", asignacion.getEvento().getId(),
@@ -130,8 +141,11 @@ public class EventosController {
 
     @PatchMapping("/{id}/cancelar")
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERADOR')")
-    public ResponseEntity<?> cancelar(@PathVariable Long id) {
+    public ResponseEntity<?> cancelar(
+            @PathVariable Long id,
+            @RequestHeader(value = RolActivoResolver.HEADER, required = false) String rolActivoHeader) {
         Usuario usuario = obtenerUsuarioActual();
+        exigirRolActivoAdminOperador(usuario, rolActivoHeader);
         Evento cancelado = eventosService.cancelar(id, usuario);
         return ResponseEntity.ok(toDTO(cancelado));
     }
@@ -158,5 +172,13 @@ public class EventosController {
         dto.setCreadoPor(evento.getCreadoPor().getId());
         dto.setFechaCreacion(evento.getFechaCreacion());
         return dto;
+    }
+
+    private void exigirRolActivoAdminOperador(Usuario usuario, String rolActivoHeader) {
+        Usuario.Rol rolActivo = rolActivoResolver.resolver(usuario, rolActivoHeader);
+        if (rolActivo != Usuario.Rol.ADMIN && rolActivo != Usuario.Rol.OPERADOR) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Esta acción no está disponible mientras actúas como " + rolActivo);
+        }
     }
 }
