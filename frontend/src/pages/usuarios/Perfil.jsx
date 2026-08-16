@@ -133,7 +133,7 @@ export default function Perfil() {
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Correo Electrónico <span className="text-slate-400 text-xs font-normal">(No se puede modificar)</span>
+                    Correo Electrónico <span className="text-slate-400 text-xs font-normal">(No se puede editar este campo)</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -168,7 +168,7 @@ export default function Perfil() {
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Contraseña <span className="text-slate-400 text-xs font-normal">(Dejar en blanco para no cambiar)</span>
+                    Contraseña 
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

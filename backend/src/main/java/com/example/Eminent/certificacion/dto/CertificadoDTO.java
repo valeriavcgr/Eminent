@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 public class CertificadoDTO {
 
     private Long id;
-    private Long asistenciaId;
+    private Long inscripcionId;
     private String codigoUnico;
     private BigDecimal duracionHoras;
     private LocalDateTime fechaEmision;

@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react';
 import { listarEventosPublicos } from '../../services/eventoService';
 import { Link } from 'react-router-dom';
-import { Calendar, Users, ChevronRight, BookOpen, MonitorPlay, Trophy } from 'lucide-react';
-import { format, isToday, isWeekend, parseISO } from 'date-fns';
+import { Calendar, CalendarDays, Clock, MapPin, FileText, Users, ChevronRight, BookOpen, MonitorPlay, Trophy, ListPlus } from 'lucide-react';
+import { format, isWeekend, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '../../components/ui/Button';
+import { Modal } from '../../components/ui/Modal';
 import PublicNavbar from '../../components/PublicNavbar';
 
 export default function LandingPublica() {
   const [eventos, setEventos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filtroFecha, setFiltroFecha] = useState('Todo'); // 'Todo', 'Hoy', 'fin de semana'
+  const [filtroFecha, setFiltroFecha] = useState('Todo'); // 'Todo', 'Entre semana', 'Fin de semana'
   const [limiteActivos, setLimiteActivos] = useState(6);
+  const [eventoSeleccionado, setEventoSeleccionado] = useState(null);
 
   useEffect(() => {
     cargarEventos();
@@ -47,6 +49,9 @@ export default function LandingPublica() {
     }
   };
 
+  const cuposDisponibles = (evento) => Math.max(0, (evento.aforo || 0) - (evento.inscritos || 0));
+  const eventoLleno = (evento) => cuposDisponibles(evento) === 0;
+
   const getTipoIcon = (tipo) => {
     switch (tipo) {
       case 'TALLER': return BookOpen;
@@ -65,10 +70,10 @@ export default function LandingPublica() {
     
     // 2. Filtro por fecha (Solo aplica a eventos activos)
     if (evento.estado === 'PROGRAMADO' || evento.estado === 'EN CURSO') {
-      if (filtroFecha === 'Hoy' && evento.fechaInicio) {
-        return isToday(parseISO(evento.fechaInicio));
+      if (filtroFecha === 'Entre semana' && evento.fechaInicio) {
+        return !isWeekend(parseISO(evento.fechaInicio));
       }
-      if (filtroFecha === 'Este fin de semana' && evento.fechaInicio) {
+      if (filtroFecha === 'Fin de semana' && evento.fechaInicio) {
         return isWeekend(parseISO(evento.fechaInicio));
       }
     }
@@ -142,7 +147,7 @@ export default function LandingPublica() {
           <h2 className="text-3xl font-bold tracking-tight text-slate-900">Próximos Eventos</h2>
           
           <div className="flex items-center gap-2 p-1 bg-slate-200/50 rounded-full w-max">
-            {['Todo', 'Hoy', 'Fin de semana'].map(filtro => (
+            {['Todo', 'Entre semana', 'Fin de semana'].map(filtro => (
               <button
                 key={filtro}
                 onClick={() => setFiltroFecha(filtro)}
@@ -173,7 +178,11 @@ export default function LandingPublica() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {eventosActivos.slice(0, limiteActivos).map((evento) => (
-                <div key={evento.id} className="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden group flex flex-col">
+                <div
+                  key={evento.id}
+                  onClick={() => setEventoSeleccionado(evento)}
+                  className="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden group flex flex-col cursor-pointer"
+                >
                   {/* Header con gradiente */}
                   {(() => { const Icon = getTipoIcon(evento.tipo); return (
                   <div className={`h-40 relative overflow-hidden bg-gradient-to-br ${getGradient(evento.tipo)}`}>
@@ -204,22 +213,37 @@ export default function LandingPublica() {
                       <div className="flex items-center text-sm text-slate-700 font-medium">
                         <Calendar className="w-4 h-4 mr-2 text-slate-500 shrink-0" />
                         <span>
-                          {evento.fechaInicio && format(new Date(evento.fechaInicio), "EEEE, d 'de' MMMM", { locale: es })}
+                          Inicia: {evento.fechaInicio && format(new Date(evento.fechaInicio), "EEEE, d 'de' MMMM", { locale: es })}
                         </span>
                       </div>
                       <div className="flex items-center text-sm text-slate-700 font-medium">
-                        <Users className="w-4 h-4 mr-2 text-slate-500 shrink-0" />
+                        <CalendarDays className="w-4 h-4 mr-2 text-slate-500 shrink-0" />
                         <span>
-                          {Math.max(0, evento.aforo - (evento.inscritos || 0))} cupos disponibles
+                          Finaliza: {evento.fechaFin && format(new Date(evento.fechaFin), "EEEE, d 'de' MMMM", { locale: es })}
+                        </span>
+                      </div>
+                      <div className={`flex items-center text-sm font-medium ${eventoLleno(evento) ? 'text-green-600' : 'text-slate-700'}`}>
+                        {eventoLleno(evento) ? <Clock className="w-4 h-4 mr-2 shrink-0" /> : <Users className="w-4 h-4 mr-2 text-slate-500 shrink-0" />}
+                        <span>
+                          {eventoLleno(evento) ? 'Aforo completo, entra a la lista de espera' : `${cuposDisponibles(evento)} cupos disponibles`}
                         </span>
                       </div>
                     </div>
-                    
+
                     <Link
                       to={`/eventos/registro/${evento.id}`}
-                      className="w-full inline-flex justify-center items-center px-4 py-3 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-blue-600 transition-colors group-hover:shadow-md"
+                      onClick={(e) => e.stopPropagation()}
+                      className={`w-full inline-flex justify-center items-center px-4 py-3 rounded-xl text-sm font-semibold transition-colors group-hover:shadow-md ${
+                        eventoLleno(evento)
+                          ? 'bg-green-800 text-white hover:bg-green-600'
+                          : 'bg-slate-900 text-white hover:bg-blue-600'
+                      }`}
                     >
-                      Reservar Cupo <ChevronRight className="ml-2 w-4 h-4" />
+                      {eventoLleno(evento) ? (
+                        <>Entrar en Lista de Espera</>
+                      ) : (
+                        <>Reservar Cupo</>
+                      )}
                     </Link>
                   </div>
                 </div>
@@ -249,7 +273,11 @@ export default function LandingPublica() {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {eventosFinalizados.map((evento) => (
-                <div key={evento.id} className="bg-white rounded-2xl border border-slate-100 p-5 flex flex-col opacity-70 hover:opacity-100 transition-opacity grayscale hover:grayscale-0">
+                <div
+                  key={evento.id}
+                  onClick={() => setEventoSeleccionado(evento)}
+                  className="bg-white rounded-2xl border border-slate-100 p-5 flex flex-col opacity-70 hover:opacity-100 transition-opacity grayscale hover:grayscale-0 cursor-pointer"
+                >
                   <span className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">{evento.tipo}</span>
                   <h3 className="text-base font-bold text-slate-900 line-clamp-2 mb-2">{evento.nombre}</h3>
                   <div className="mt-auto text-sm text-slate-500 flex items-center">
@@ -262,6 +290,99 @@ export default function LandingPublica() {
           </div>
         )}
       </div>
+
+      {/* Detalle público del evento */}
+      <Modal
+        isOpen={Boolean(eventoSeleccionado)}
+        onClose={() => setEventoSeleccionado(null)}
+        title={eventoSeleccionado?.nombre || 'Detalle del Evento'}
+      >
+        {eventoSeleccionado && (
+          <div className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${getTipoBadge(eventoSeleccionado.tipo)}`}>
+                {eventoSeleccionado.tipo}
+              </span>
+              <span className="flex items-center gap-1 text-xs font-medium text-slate-500">
+                {eventoSeleccionado.modalidad === 'VIRTUAL' ? <Clock className="w-3.5 h-3.5" /> : <MapPin className="w-3.5 h-3.5" />}
+                <span className="capitalize">{eventoSeleccionado.modalidad?.toLowerCase()}</span>
+              </span>
+            </div>
+
+            {eventoSeleccionado.descripcion && (
+              <p className="text-sm text-slate-600 flex gap-2">
+                <FileText className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
+                {eventoSeleccionado.descripcion}
+              </p>
+            )}
+
+            <div>
+              <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5 mb-2">
+                <CalendarDays className="w-4 h-4" /> {eventoSeleccionado.jornadas?.length > 1 ? 'Jornadas del Evento' : 'Fecha del Evento'}
+              </h4>
+              {eventoSeleccionado.jornadas && eventoSeleccionado.jornadas.length > 0 ? (
+                <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-100">
+                  {eventoSeleccionado.jornadas
+                    .slice()
+                    .sort((a, b) => a.numeroDia - b.numeroDia)
+                    .map((j) => (
+                      <div key={j.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                        {eventoSeleccionado.jornadas.length > 1 && (
+                          <span className="font-medium text-slate-700">Día {j.numeroDia}</span>
+                        )}
+                        <span className="text-slate-600">
+                          {j.fecha ? format(parseISO(j.fecha), "EEEE, d 'de' MMMM", { locale: es }) : '—'}
+                        </span>
+                        <span className="flex items-center gap-1 text-slate-500">
+                          <Clock className="w-3.5 h-3.5" />
+                          {j.horaInicio?.slice(0, 5)} – {j.horaFin?.slice(0, 5)}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400">Fecha por definir.</p>
+              )}
+              {eventoSeleccionado.jornadas?.length > 1 && (
+                <p className="text-xs text-slate-400 mt-2">
+                  Este evento requiere asistir a todas las jornadas para obtener el certificado.
+                </p>
+              )}
+            </div>
+
+            <div className={`flex items-center text-sm font-medium rounded-lg px-3 py-2 border ${eventoLleno(eventoSeleccionado) ? 'text-green-700 bg-green-50 border-green-100' : 'text-slate-700 bg-slate-50 border-slate-100'}`}>
+              {eventoLleno(eventoSeleccionado) ? <Clock className="w-4 h-4 mr-2 shrink-0" /> : <Users className="w-4 h-4 mr-2 text-slate-500 shrink-0" />}
+              {eventoLleno(eventoSeleccionado)
+                ? `Aforo completo (${eventoSeleccionado.aforo}/${eventoSeleccionado.aforo}) — puedes anotarte en lista de espera`
+                : `${cuposDisponibles(eventoSeleccionado)} cupos disponibles de ${eventoSeleccionado.aforo}`}
+            </div>
+
+            {eventoLleno(eventoSeleccionado) && (eventoSeleccionado.estado === 'PROGRAMADO' || eventoSeleccionado.estado === 'EN_CURSO') && (
+              <p className="text-xs text-slate-500">
+                Este evento ya alcanzó su aforo máximo. Si te inscribes, quedarás en <strong>lista de espera</strong> y serás promovido automáticamente si se libera un cupo antes de que el evento inicie. Puedes ver el estado de tu inscripción en la sección Consultar Inscripción
+              </p>
+            )}
+
+            {(eventoSeleccionado.estado === 'PROGRAMADO' || eventoSeleccionado.estado === 'EN_CURSO') && (
+              <Link
+                to={`/eventos/registro/${eventoSeleccionado.id}`}
+                onClick={() => setEventoSeleccionado(null)}
+                className={`w-full inline-flex justify-center items-center px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${
+                  eventoLleno(eventoSeleccionado)
+                    ? 'bg-green-800 text-white hover:bg-green-600'
+                    : 'bg-slate-900 text-white hover:bg-blue-600'
+                }`}
+              >
+                {eventoLleno(eventoSeleccionado) ? (
+                  <>Entrar en Lista de Espera</>
+                ) : (
+                  <>Reservar Cupo</>
+                )}
+              </Link>
+            )}
+          </div>
+        )}
+      </Modal>
 
       {/* 7. Footer */}
       <footer className="bg-slate-900 border-t border-slate-800 pt-16 pb-8">

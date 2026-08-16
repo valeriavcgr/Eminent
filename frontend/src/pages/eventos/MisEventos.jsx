@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { listarEventosMonitor } from '../../services/eventoService';
 import { obtenerComentariosEvento } from '../../services/encuestaService';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -10,12 +10,14 @@ import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import {
   Calendar as CalendarIcon,
+  CalendarDays,
   MapPin,
   Clock,
   Users,
   QrCode,
   CheckCircle2,
-  Star
+  Star,
+  FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Pagination from '../../components/Pagination';
@@ -26,6 +28,10 @@ export default function MisEventos() {
   const [paginaActual, setPaginaActual] = useState(1);
   const FILAS_POR_PAGINA = 10;
   const navigate = useNavigate();
+
+  // --- Modal de detalle ---
+  const [detalleModalOpen, setDetalleModalOpen] = useState(false);
+  const [eventoDetalle, setEventoDetalle] = useState(null);
 
   // --- Modal de encuesta ---
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -53,6 +59,11 @@ export default function MisEventos() {
       setTotalPaginasComentarios(1);
       setTotalComentarios(0);
     }
+  };
+
+  const abrirDetalleModal = (evento) => {
+    setEventoDetalle(evento);
+    setDetalleModalOpen(true);
   };
 
   const abrirComentarios = async (evento) => {
@@ -137,6 +148,7 @@ export default function MisEventos() {
                   <th className="px-6 py-4">Información del Evento</th>
                   <th className="px-6 py-4">Modalidad</th>
                   <th className="px-6 py-4">Fecha de Inicio</th>
+                  <th className="px-6 py-4">Fecha Fin</th>
                   <th className="px-6 py-4">Estado</th>
                   <th className="px-6 py-4 text-right">Acciones</th>
                 </tr>
@@ -144,13 +156,13 @@ export default function MisEventos() {
               <tbody className="divide-y divide-slate-200">
                 {isLoading ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-8 text-center text-slate-500">
+                    <td colSpan="6" className="px-6 py-8 text-center text-slate-500">
                       Cargando tus eventos...
                     </td>
                   </tr>
                 ) : eventosPagina.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-8 text-center text-slate-500">
+                    <td colSpan="6" className="px-6 py-8 text-center text-slate-500">
                       No tienes eventos asignados en este momento.
                     </td>
                   </tr>
@@ -180,12 +192,27 @@ export default function MisEventos() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
+                        <div className="flex items-center text-slate-600">
+                          <CalendarIcon className="w-4 h-4 mr-2" />
+                          <span>{e.fechaFin ? format(new Date(e.fechaFin), "d MMM, yyyy - HH:mm", { locale: es }) : 'Por definir'}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
                         <Badge variant={getEstadoColor(e.estado)}>
                           {e.estado}
                         </Badge>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="text-slate-700 bg-white border-slate-200 hover:bg-slate-50"
+                            icon={FileText}
+                            onClick={() => abrirDetalleModal(e)}
+                          >
+                            Detalle
+                          </Button>
                           {e.estado !== 'CANCELADO' && e.estado !== 'FINALIZADO' && (
                             <>
                               <Button
@@ -195,7 +222,7 @@ export default function MisEventos() {
                                 icon={Users}
                                 onClick={() => navigate(`/eventos/${e.id}/asistencia`)}
                               >
-                                Ver Lista
+                                Lista
                               </Button>
                               <Button
                                 size="sm"
@@ -216,7 +243,7 @@ export default function MisEventos() {
                                 icon={Users}
                                 onClick={() => navigate(`/eventos/${e.id}/asistencia`)}
                               >
-                                Ver Asistencia
+                              Asistencia
                               </Button>
                               <Button
                                 size="sm"
@@ -225,7 +252,7 @@ export default function MisEventos() {
                                 icon={Star}
                                 onClick={() => abrirComentarios(e)}
                               >
-                                Ver Encuesta
+                              Encuesta
                               </Button>
                             </>
                           )}
@@ -244,6 +271,85 @@ export default function MisEventos() {
           />
         </CardContent>
       </Card>
+
+      {/* Modal de detalle del evento */}
+      <Modal
+        isOpen={detalleModalOpen}
+        onClose={() => setDetalleModalOpen(false)}
+        title="Detalle del Evento"
+      >
+        {eventoDetalle && (
+          <div className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-lg font-bold text-slate-900">{eventoDetalle.nombre}</h3>
+                <Badge variant={getEstadoColor(eventoDetalle.estado)}>{eventoDetalle.estado}</Badge>
+              </div>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getTipoColor(eventoDetalle.tipo)}`}>
+                  {eventoDetalle.tipo}
+                </span>
+                <span className="flex items-center gap-1 text-xs text-slate-500">
+                  {eventoDetalle.modalidad === 'VIRTUAL' ? <Clock className="w-3.5 h-3.5" /> : <MapPin className="w-3.5 h-3.5" />}
+                  <span className="capitalize">{eventoDetalle.modalidad?.toLowerCase()}</span>
+                </span>
+              </div>
+              {eventoDetalle.descripcion && (
+                <p className="text-sm text-slate-600 mt-3 flex gap-2">
+                  <FileText className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
+                  {eventoDetalle.descripcion}
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-slate-50 rounded-lg p-3 text-center border border-slate-100">
+                <p className="text-xs font-medium text-slate-500">Aforo</p>
+                <p className="text-lg font-bold text-slate-800">{eventoDetalle.aforo}</p>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-3 text-center border border-slate-100">
+                <p className="text-xs font-medium text-slate-500">Inscritos</p>
+                <p className="text-lg font-bold text-slate-800">{eventoDetalle.inscritos ?? 0}</p>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-3 text-center border border-slate-100">
+                <p className="text-xs font-medium text-slate-500">Jornadas</p>
+                <p className="text-lg font-bold text-slate-800">{eventoDetalle.jornadas?.length ?? 0}</p>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5 mb-2">
+                <CalendarDays className="w-4 h-4" /> Jornadas del Evento
+              </h4>
+              {eventoDetalle.jornadas && eventoDetalle.jornadas.length > 0 ? (
+                <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-100">
+                  {eventoDetalle.jornadas
+                    .slice()
+                    .sort((a, b) => a.numeroDia - b.numeroDia)
+                    .map((j) => (
+                      <div key={j.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                        <span className="font-medium text-slate-700">Día {j.numeroDia}</span>
+                        <span className="text-slate-600">
+                          {j.fecha ? format(parseISO(j.fecha), "d MMM yyyy", { locale: es }) : '—'}
+                        </span>
+                        <span className="flex items-center gap-1 text-slate-500">
+                          <Clock className="w-3.5 h-3.5" />
+                          {j.horaInicio?.slice(0, 5)} – {j.horaFin?.slice(0, 5)}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400">Sin jornadas registradas.</p>
+              )}
+            </div>
+
+            <div className="text-xs text-slate-400 border-t border-slate-100 pt-3">
+              Creado el {eventoDetalle.fechaCreacion ? format(new Date(eventoDetalle.fechaCreacion), "d MMM yyyy - HH:mm", { locale: es }) : '—'}
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Modal de resultados de encuesta */}
       <Modal

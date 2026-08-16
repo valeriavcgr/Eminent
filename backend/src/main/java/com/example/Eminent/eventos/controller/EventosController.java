@@ -2,10 +2,13 @@ package com.example.Eminent.eventos.controller;
 
 import com.example.Eminent.auth.RolActivoResolver;
 import com.example.Eminent.eventos.dto.EventoDTO;
+import com.example.Eminent.eventos.dto.EventoDiaDTO;
 import jakarta.validation.Valid;
 import com.example.Eminent.eventos.entity.Evento;
+import com.example.Eminent.eventos.entity.EventoDia;
 import com.example.Eminent.eventos.entity.EventoMonitor;
 import com.example.Eminent.eventos.repository.EventoMonitorRepository;
+import com.example.Eminent.eventos.service.EventoDiaService;
 import com.example.Eminent.eventos.service.EventosService;
 import com.example.Eminent.participacion.entity.Inscripcion;
 import com.example.Eminent.participacion.repository.InscripcionRepository;
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -30,6 +34,7 @@ import java.util.stream.Collectors;
 public class EventosController {
 
     @Autowired private EventosService eventosService;
+    @Autowired private EventoDiaService eventoDiaService;
     @Autowired private UsuarioRepository usuarioRepository;
     @Autowired private InscripcionRepository inscripcionRepository;
     @Autowired private EventoMonitorRepository eventoMonitorRepository;
@@ -42,6 +47,26 @@ public class EventosController {
     public ResponseEntity<?> obtenerPorId(@PathVariable Long id) {
         Evento evento = eventosService.obtenerPorId(id);
         return ResponseEntity.ok(toDTO(evento));
+    }
+
+    /**
+     * Lista las jornadas (días) de un evento.
+     */
+    @GetMapping("/{id}/jornadas")
+    public ResponseEntity<List<EventoDiaDTO>> listarJornadas(@PathVariable Long id) {
+        List<EventoDiaDTO> jornadas = eventosService.listarJornadas(id).stream()
+                .map(this::toJornadaDTO).toList();
+        return ResponseEntity.ok(jornadas);
+    }
+
+    /**
+     * Devuelve la jornada activa en este momento, o 204 si no hay ninguna en curso.
+     */
+    @GetMapping("/{id}/jornadas/activa")
+    public ResponseEntity<EventoDiaDTO> jornadaActiva(@PathVariable Long id) {
+        Optional<EventoDia> jornada = eventoDiaService.obtenerJornadaActivaOpcional(id);
+        return jornada.map(j -> ResponseEntity.ok(toJornadaDTO(j)))
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     /**
@@ -171,7 +196,13 @@ public class EventosController {
         dto.setEstado(evento.getEstado().name());
         dto.setCreadoPor(evento.getCreadoPor().getId());
         dto.setFechaCreacion(evento.getFechaCreacion());
+        dto.setJornadas(eventosService.listarJornadas(evento.getId()).stream().map(this::toJornadaDTO).toList());
         return dto;
+    }
+
+    private EventoDiaDTO toJornadaDTO(EventoDia jornada) {
+        return new EventoDiaDTO(jornada.getId(), jornada.getNumeroDia(), jornada.getFecha(),
+                jornada.getHoraInicio(), jornada.getHoraFin());
     }
 
     private void exigirRolActivoAdminOperador(Usuario usuario, String rolActivoHeader) {

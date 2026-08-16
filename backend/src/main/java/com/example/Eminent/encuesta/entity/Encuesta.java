@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
-import com.example.Eminent.asistencia.entity.Asistencia;
+import com.example.Eminent.participacion.entity.Inscripcion;
 
 @Entity
 @Table(name = "encuesta")
@@ -19,8 +19,8 @@ public class Encuesta {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "asistencia_id", nullable = false, unique = true)
-    private Asistencia asistencia;
+    @JoinColumn(name = "inscripcion_id", nullable = false, unique = true)
+    private Inscripcion inscripcion;
 
     @Column(nullable = false)
     private int calificacion; // 1 a 5

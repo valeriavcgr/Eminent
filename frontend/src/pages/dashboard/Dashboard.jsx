@@ -73,26 +73,53 @@ export default function Dashboard() {
     { label: 'Satisfacción Promedio', valor: datos.promedioSatisfaccionGeneral ? `${datos.promedioSatisfaccionGeneral.toFixed(1)} ★` : 'Sin datos', icon: Star, color: 'text-amber-600 bg-amber-50 border-amber-100 hover:border-amber-300' },
   ];
 
-  const BarraDesglose = ({ datos: entradas, colorClass = 'bg-blue-500' }) => {
+  const COLORES_DONUT = {
+    // Eventos por Tipo
+    TALLER: '#2563eb', CAPACITACION: '#8b5cf6', TORNEO: '#f59e0b',
+    // Eventos por Modalidad
+    PRESENCIAL: '#2563eb', VIRTUAL: '#10b981',
+    // Eventos por Estado
+    PROGRAMADO: '#3b82f6', EN_CURSO: '#10b981', FINALIZADO: '#94a3b8', CANCELADO: '#ef4444',
+  };
+  const COLOR_DONUT_DEFECTO = '#cbd5e1';
+
+  const Donut = ({ datos: entradas }) => {
     const items = Object.entries(entradas || {});
-    const max = Math.max(...items.map(([, v]) => v), 1);
+    const total = items.reduce((acc, [, v]) => acc + v, 0);
+
+    if (total === 0) {
+      return <p className="text-sm text-slate-400 text-center py-8">Sin datos registrados</p>;
+    }
+
+    let acumulado = 0;
+    const segmentos = items.map(([k, v]) => {
+      const inicio = (acumulado / total) * 360;
+      acumulado += v;
+      const fin = (acumulado / total) * 360;
+      return { key: k, valor: v, color: COLORES_DONUT[k] || COLOR_DONUT_DEFECTO, inicio, fin };
+    });
+    const gradiente = segmentos.map((s) => `${s.color} ${s.inicio}deg ${s.fin}deg`).join(', ');
+
     return (
-      <div className="space-y-4">
-        {items.length === 0 && <p className="text-sm text-slate-400">Sin datos registrados</p>}
-        {items.map(([k, v]) => (
-          <div key={k} className="group">
-            <div className="flex justify-between text-xs mb-1.5">
-              <span className="text-slate-600 font-medium group-hover:text-slate-900 transition-colors">{k}</span>
-              <span className="text-slate-500 font-semibold">{v}</span>
-            </div>
-            <div className="w-full bg-slate-100/80 rounded-full h-2 overflow-hidden border border-slate-200/20">
-              <div
-                className={`${colorClass} h-2 rounded-full transition-all duration-700 ease-out`}
-                style={{ width: `${(v / max) * 100}%` }}
-              ></div>
-            </div>
+      <div className="flex items-center gap-6">
+        <div
+          className="relative w-28 h-28 flex-shrink-0 rounded-full"
+          style={{ background: `conic-gradient(${gradiente})` }}
+        >
+          <div className="absolute inset-3 bg-white rounded-full flex flex-col items-center justify-center shadow-inner">
+            <span className="text-xl font-black text-slate-800 leading-none">{total}</span>
+            <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wide mt-0.5">Total</span>
           </div>
-        ))}
+        </div>
+        <div className="space-y-2 flex-1 min-w-0">
+          {segmentos.map((s) => (
+            <div key={s.key} className="flex items-center gap-2 text-xs">
+              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }}></span>
+              <span className="text-slate-600 font-medium truncate flex-1">{s.key}</span>
+              <span className="text-slate-500 font-semibold">{s.valor}</span>
+            </div>
+          ))}
+        </div>
       </div>
     );
   };
@@ -103,7 +130,7 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-5">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Panel de Control</h1>
-          <p className="text-slate-500 text-sm mt-1">Monitorea y analiza las métricas de tus eventos en tiempo real.</p>
+          <p className="text-slate-500 text-sm mt-1">Monitorea y analiza las estadisticas de tus eventos en tiempo real</p>
         </div>
         <div className="flex items-center gap-2">
           {cargando && <RefreshCw className="w-4 h-4 text-blue-600 animate-spin mr-2" />}
@@ -211,13 +238,13 @@ export default function Dashboard() {
       {/* KPI Metrics Cards Grid with Premium Interactions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
         {tarjetas.map((t) => (
-          <Card 
-            key={t.label} 
+          <Card
+            key={t.label}
             className="group relative border border-slate-200/80 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 bg-white overflow-hidden cursor-default"
           >
             {/* Shimmer element on hover */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none"></div>
-            
+
             <CardContent className="p-6 flex items-center gap-5">
               <div className={`w-14 h-14 rounded-xl flex items-center justify-center border transition-all duration-300 shadow-sm ${t.color}`}>
                 <t.icon className="w-7 h-7" />
@@ -238,7 +265,7 @@ export default function Dashboard() {
             <CardTitle className="text-base font-bold text-slate-800">Eventos por Tipo</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <BarraDesglose datos={datos.eventosPorTipo} colorClass="bg-blue-600" />
+            <Donut datos={datos.eventosPorTipo} />
           </CardContent>
         </Card>
 
@@ -247,7 +274,7 @@ export default function Dashboard() {
             <CardTitle className="text-base font-bold text-slate-800">Eventos por Modalidad</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <BarraDesglose datos={datos.eventosPorModalidad} colorClass="bg-emerald-500" />
+            <Donut datos={datos.eventosPorModalidad} />
           </CardContent>
         </Card>
 
@@ -256,7 +283,7 @@ export default function Dashboard() {
             <CardTitle className="text-base font-bold text-slate-800">Eventos por Estado</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <BarraDesglose datos={datos.eventosPorEstado} colorClass="bg-purple-500" />
+            <Donut datos={datos.eventosPorEstado} />
           </CardContent>
         </Card>
       </div>
@@ -265,7 +292,7 @@ export default function Dashboard() {
       <Card className="border border-slate-200/60 hover:shadow-md transition-shadow duration-300 bg-white">
         <CardHeader className="border-b border-slate-100 bg-slate-50/20 py-4">
           <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
-            <Trophy className="w-4 h-4 text-amber-500" /> Ranking de Eventos por % de Asistencia
+            <Trophy className="w-4 h-4 text-amber-500" /> Ranking de Eventos por porcentaje de Asistencia
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -300,7 +327,7 @@ export default function Dashboard() {
                               style={{ width: `${Math.min(100, e.porcentajeAsistencia)}%` }}
                             ></div>
                           </div>
-                          <span className="text-xs text-slate-500 w-10 text-right">{e.porcentajeAsistencia.toFixed(0)}%</span>
+                          <span className="text-xs text-slate-500 w-10 text-right">{Math.min(100, e.porcentajeAsistencia).toFixed(0)}%</span>
                         </div>
                       </td>
                       <td className="px-6 py-3">

@@ -3,7 +3,9 @@ import { listarUsuarios, cambiarEstadoUsuario } from '../../services/usuarioServ
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
-import { Search, Plus, Edit2, ShieldOff, ShieldCheck, Filter, AlertTriangle } from 'lucide-react';
+import { Search, Plus, Edit2, Eye, ShieldOff, ShieldCheck, Filter, AlertTriangle, Mail, Phone, Calendar, IdCard } from 'lucide-react';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -21,6 +23,8 @@ export default function ListaUsuarios() {
   const FILAS_POR_PAGINA = 10;
   const [estadoModalOpen, setEstadoModalOpen] = useState(false);
   const [usuarioParaCambiarEstado, setUsuarioParaCambiarEstado] = useState(null);
+  const [detalleModalOpen, setDetalleModalOpen] = useState(false);
+  const [usuarioDetalle, setUsuarioDetalle] = useState(null);
 
   let currentUserEmail = '';
   if (token) {
@@ -50,6 +54,11 @@ export default function ListaUsuarios() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const abrirDetalleModal = (u) => {
+    setUsuarioDetalle(u);
+    setDetalleModalOpen(true);
   };
 
   const abrirModalEstado = (u) => {
@@ -182,6 +191,13 @@ export default function ListaUsuarios() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            icon={Eye}
+                            onClick={() => abrirDetalleModal(u)}
+                            title="Ver detalle del usuario"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             icon={Edit2}
                             onClick={() => navigate(`/usuarios/editar/${u.id}`)}
                             title="Editar usuario"
@@ -211,6 +227,55 @@ export default function ListaUsuarios() {
           />
         </CardContent>
       </Card>
+
+      <Modal
+        isOpen={detalleModalOpen}
+        onClose={() => setDetalleModalOpen(false)}
+        title="Detalle del Usuario"
+      >
+        {usuarioDetalle && (
+          <div className="space-y-5 flex flex-col items-center text-center">
+            <div className="flex flex-col items-center gap-2">
+              <div className="h-14 w-14 flex-shrink-0 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-lg uppercase">
+                {usuarioDetalle.nombre.charAt(0)}{usuarioDetalle.apellido.charAt(0)}
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">{usuarioDetalle.nombre} {usuarioDetalle.apellido}</h3>
+                <Badge variant={usuarioDetalle.estado === 'ACTIVO' ? 'success' : 'danger'}>
+                  {usuarioDetalle.estado}
+                </Badge>
+              </div>
+            </div>
+
+            <div className="w-full">
+              <h4 className="text-sm font-semibold text-slate-700 flex items-center justify-center gap-1.5 mb-2">
+                <IdCard className="w-4 h-4" /> Roles
+              </h4>
+              <div className="flex gap-1.5 flex-wrap justify-center">
+                {usuarioDetalle.roles.map((r) => (
+                  <Badge key={r} variant={r.toLowerCase()}>{r}</Badge>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2 w-full">
+              <div className="flex items-center justify-center text-sm text-slate-600">
+                <Mail className="w-4 h-4 mr-2 text-slate-400 flex-shrink-0" />
+                {usuarioDetalle.correo}
+              </div>
+              <div className="flex items-center justify-center text-sm text-slate-600">
+                <Phone className="w-4 h-4 mr-2 text-slate-400 flex-shrink-0" />
+                {usuarioDetalle.telefono || 'Sin teléfono registrado'}
+              </div>
+            </div>
+
+            <div className="text-xs text-slate-400 border-t border-slate-100 pt-3 flex items-center justify-center gap-1.5 w-full">
+              <Calendar className="w-3.5 h-3.5" />
+              Creado el {usuarioDetalle.fechaCreacion ? format(new Date(usuarioDetalle.fechaCreacion), "d MMM yyyy - HH:mm", { locale: es }) : '—'}
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <Modal
         isOpen={estadoModalOpen}

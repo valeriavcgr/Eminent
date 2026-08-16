@@ -5,6 +5,11 @@ export async function crearEvento(datos) {
   return response.data;
 }
 
+export async function obtenerEvento(id) {
+  const response = await api.get(`/eventos/${id}`);
+  return response.data;
+}
+
 export async function listarEventos(filtros = {}) {
   const response = await api.get('/eventos', { params: { size: 1000, ...filtros } });
   return response.data.content;
@@ -32,4 +37,9 @@ export async function asignarMonitor(eventoId, monitorId) {
 export async function listarEventosMonitor() {
   const response = await api.get('/eventos/mis-eventos', { params: { size: 1000 } });
   return response.data.content;
+}
+
+export async function listarMonitoresEvento(eventoId) {
+  const response = await api.get(`/eventos/${eventoId}/monitores`);
+  return response.data;
 }

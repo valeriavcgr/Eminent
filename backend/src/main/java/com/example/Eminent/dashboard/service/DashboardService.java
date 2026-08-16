@@ -71,7 +71,9 @@ public class DashboardService {
 
         for (Evento evento : eventos) {
             long inscritosEvento = inscripcionRepository.countByEventoIdAndEstado(evento.getId(), Inscripcion.Estado.ACTIVA);
-            long asistieronEvento = asistenciaRepository.countByInscripcion_Evento_Id(evento.getId());
+            // Participantes distintos que asistieron al menos una jornada (no filas de asistencia:
+            // en eventos de varios días una persona puede tener varias filas y no debe contarse repetida).
+            long asistieronEvento = asistenciaRepository.countParticipantesConAsistencia(evento.getId());
 
             aforoTotal += evento.getAforo();
             inscritosActivosTotal += inscritosEvento;

@@ -1,14 +1,17 @@
 package com.example.Eminent.certificacion.service;
 
-import com.example.Eminent.asistencia.entity.Asistencia;
 import com.example.Eminent.asistencia.repository.AsistenciaRepository;
 import com.example.Eminent.auditoria.entity.Auditoria;
 import com.example.Eminent.auditoria.service.AuditoriaService;
 import com.example.Eminent.certificacion.entity.Certificado;
 import com.example.Eminent.certificacion.repository.CertificadoRepository;
 import com.example.Eminent.eventos.entity.Evento;
+import com.example.Eminent.eventos.entity.EventoDia;
+import com.example.Eminent.eventos.repository.EventoDiaRepository;
 import com.example.Eminent.eventos.repository.EventoRepository;
+import com.example.Eminent.participacion.entity.Inscripcion;
 import com.example.Eminent.participacion.entity.Participante;
+import com.example.Eminent.participacion.repository.InscripcionRepository;
 import com.example.Eminent.participacion.repository.ParticipanteRepository;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
@@ -36,6 +39,8 @@ public class CertificacionService {
     @Autowired private AsistenciaRepository asistenciaRepo;
     @Autowired private CertificadoRepository certificadoRepo;
     @Autowired private EventoRepository eventoRepo;
+    @Autowired private EventoDiaRepository eventoDiaRepo;
+    @Autowired private InscripcionRepository inscripcionRepo;
     @Autowired private ParticipanteRepository participanteRepo;
     @Autowired private PdfService pdfService;
     @Autowired private AuditoriaService auditoriaService;
@@ -57,23 +62,32 @@ public class CertificacionService {
     }
 
     public void generarCertificadosDeEvento(Evento evento) throws Exception {
-        List<Asistencia> asistencias = asistenciaRepo.findByInscripcion_Evento_Id(evento.getId());
+        List<EventoDia> jornadas = eventoDiaRepo.findByEvento_IdOrderByNumeroDiaAsc(evento.getId());
+        int totalJornadas = jornadas.size();
+        double horasTotales = jornadas.stream()
+                .mapToDouble(j -> Duration.between(
+                        LocalDateTime.of(j.getFecha(), j.getHoraInicio()),
+                        LocalDateTime.of(j.getFecha(), j.getHoraFin())).toMinutes() / 60.0)
+                .sum();
+        BigDecimal duracionHoras = BigDecimal.valueOf(horasTotales).setScale(1, RoundingMode.HALF_UP);
+        String duracionTexto = duracionHoras.stripTrailingZeros().toPlainString() + " horas";
+        String fechasEventoTexto = formatearFechasEvento(evento.getFechaInicio(), evento.getFechaFin());
+
+        List<Inscripcion> activas = inscripcionRepo
+                .findByEventoIdAndEstado(evento.getId(), Inscripcion.Estado.ACTIVA, Pageable.unpaged())
+                .getContent();
 
         int generados = 0;
-        for (Asistencia asistencia : asistencias) {
-            if (certificadoRepo.findByAsistenciaId(asistencia.getId()).isPresent()) continue;
+        for (Inscripcion inscripcion : activas) {
+            if (certificadoRepo.existsByInscripcion_Id(inscripcion.getId())) continue;
+
+            long diasAsistidos = asistenciaRepo.countByInscripcion_Id(inscripcion.getId());
+            if (totalJornadas == 0 || diasAsistidos < totalJornadas) continue;
 
             String codigoUnico = "CERT-" + evento.getId() + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-
-            double horasReales = Duration.between(evento.getFechaInicio(), evento.getFechaFin()).toMinutes() / 60.0;
-            BigDecimal duracionHoras = BigDecimal.valueOf(horasReales).setScale(1, RoundingMode.HALF_UP);
-            String duracionTexto = duracionHoras.stripTrailingZeros().toPlainString() + " horas";
-
-            String fechasEventoTexto = formatearFechasEvento(evento.getFechaInicio(), evento.getFechaFin());
-
             String rutaQr = generarQrVerificacion(codigoUnico);
 
-            Participante participante = asistencia.getInscripcion().getParticipante();
+            Participante participante = inscripcion.getParticipante();
             String nombreCompleto = participante.getNombre() + " " + participante.getApellido();
             String fechaEmisionTexto = LocalDateTime.now()
                     .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
@@ -82,7 +96,7 @@ public class CertificacionService {
                     fechasEventoTexto, duracionTexto, fechaEmisionTexto, codigoUnico, rutaQr);
 
             Certificado certificado = new Certificado();
-            certificado.setAsistencia(asistencia);
+            certificado.setInscripcion(inscripcion);
             certificado.setCodigoUnico(codigoUnico);
             certificado.setDuracionHoras(duracionHoras);
             certificado.setRutaPdf(rutaPdf);
@@ -114,11 +128,10 @@ public class CertificacionService {
         Participante participante = participanteRepo.findByDocumento(documento)
                 .orElseThrow(() -> new IllegalArgumentException("No se encontró ningún participante con ese documento"));
 
-        Asistencia asistencia = asistenciaRepo
-                .findByInscripcion_Participante_IdAndInscripcion_Evento_Id(participante.getId(), eventoId)
+        Inscripcion inscripcion = inscripcionRepo.findByParticipanteIdAndEventoId(participante.getId(), eventoId)
                 .orElseThrow(() -> new IllegalArgumentException("No hay certificado disponible para este evento"));
 
-        return certificadoRepo.findByAsistenciaId(asistencia.getId())
+        return certificadoRepo.findByInscripcion_Id(inscripcion.getId())
                 .orElseThrow(() -> new IllegalArgumentException("No hay certificado disponible para este evento"));
     }
 

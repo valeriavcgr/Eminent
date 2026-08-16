@@ -27,6 +27,9 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     /** Verifica si existe un evento con el mismo nombre y tipo. */
     boolean existsByNombreAndTipo(String nombre, Tipo tipo);
 
+    /** Busca un evento por su nombre y tipo exactos (usado para ubicar el evento demo de la semilla). */
+    Optional<Evento> findByNombreAndTipo(String nombre, Tipo tipo);
+
     /** Lista eventos con estado dado cuya fecha de inicio es igual o anterior a la fecha proporcionada. */
     List<Evento> findByEstadoAndFechaInicioLessThanEqual(Estado estado, LocalDateTime fecha);
 
