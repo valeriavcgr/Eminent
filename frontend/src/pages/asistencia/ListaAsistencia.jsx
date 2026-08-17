@@ -150,8 +150,8 @@ export default function ListaAsistencia() {
               <Percent className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500">% Aforo Ocupado</p>
-              <h3 className="text-2xl font-bold text-slate-900">{datos.resumen.porcentajeAforoOcupado.toFixed(1)}%</h3>
+              <p className="text-sm font-medium text-slate-500">% Asistencia</p>
+              <h3 className="text-2xl font-bold text-slate-900">{datos.resumen.porcentajeAsistencia.toFixed(1)}%</h3>
             </div>
           </CardContent>
         </Card>

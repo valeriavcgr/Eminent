@@ -10,6 +10,6 @@ public class ResumenAsistenciaDTO {
     private long totalInscritos;
     /** Total de participantes que registraron su asistencia. */
     private long totalAsistieron;
-    /** Porcentaje del aforo que está ocupado (asistieron / aforo). */
-    private double porcentajeAforoOcupado;
+    /** Porcentaje de inscritos que asistió (asistieron / inscritos). */
+    private double porcentajeAsistencia;
 }

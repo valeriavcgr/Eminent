@@ -731,7 +731,7 @@ export default function ListarEvento() {
               <div className="bg-slate-50 rounded-lg p-3 text-center border border-slate-100">
                 <p className="text-xs font-medium text-slate-500">% Asistencia</p>
                 <p className="text-lg font-bold text-slate-800">
-                  {resumenEncuesta ? `${resumenEncuesta.porcentajeAforoOcupado.toFixed(0)}%` : '—'}
+                  {resumenEncuesta ? `${resumenEncuesta.porcentajeAsistencia.toFixed(0)}%` : '—'}
                 </p>
               </div>
               <div className="bg-amber-50 rounded-lg p-3 text-center border border-amber-100">

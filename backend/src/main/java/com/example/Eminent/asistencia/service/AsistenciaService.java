@@ -76,12 +76,12 @@ public class AsistenciaService {
 
         long totalInscritos = lista.size();
         long totalAsistieron = lista.stream().filter(p -> p.getDiasAsistidos() > 0).count();
-        double porcentaje = evento.getAforo() > 0 ? (totalAsistieron * 100.0 / evento.getAforo()) : 0;
+        double porcentaje = totalInscritos > 0 ? (totalAsistieron * 100.0 / totalInscritos) : 0;
 
         ResumenAsistenciaDTO resumen = new ResumenAsistenciaDTO();
         resumen.setTotalInscritos(totalInscritos);
         resumen.setTotalAsistieron(totalAsistieron);
-        resumen.setPorcentajeAforoOcupado(porcentaje);
+        resumen.setPorcentajeAsistencia(porcentaje);
 
         ListadoAsistenciaDTO resultado = new ListadoAsistenciaDTO();
         resultado.setResumen(resumen);
