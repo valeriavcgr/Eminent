@@ -14,7 +14,8 @@ import {
   Clock,
   ArrowLeft,
   CalendarDays,
-  AlertTriangle
+  AlertTriangle,
+  AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -200,7 +201,7 @@ export default function ListaAsistencia() {
                           </div>
                         ) : p.diasAsistidos > 0 ? (
                           <div className="flex items-center text-amber-600 font-medium">
-                            <Clock className="w-4 h-4 mr-1" />
+                            <AlertCircle className="w-4 h-4 mr-1" />
                             <span>{p.diasAsistidos}/{datos.totalJornadas} días</span>
                           </div>
                         ) : eventoTerminado ? (
