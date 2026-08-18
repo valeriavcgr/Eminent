@@ -5,12 +5,16 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Se reutiliza tanto para crear (todo obligatorio) como para editar (actualización
  * parcial). Igual que en UsuarioRequest, las anotaciones son solo de formato/rango
  * para no romper la edición parcial; la obligatoriedad al crear, el aforo vs.
- * inscritos y la fecha fin >= inicio siguen en EventosService.
+ * inscritos y la validación de jornadas siguen en EventosService.
+ *
+ * fechaInicio/fechaFin son de solo lectura: se calculan a partir de las jornadas
+ * (min/max de sus horarios) y se ignoran si vienen en la request de creación/edición.
  */
 @Getter
 @Setter
@@ -34,6 +38,9 @@ public class EventoDTO {
     private String estado;
     private Long creadoPor;
     private LocalDateTime fechaCreacion;
+
+    /** Jornadas (días) del evento. Obligatorio al menos una al crear. */
+    private List<EventoDiaDTO> jornadas;
 
     public EventoDTO() {
     }

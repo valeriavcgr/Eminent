@@ -39,11 +39,11 @@ public class CertificacionController {
     @GetMapping("/info")
     public ResponseEntity<CertificadoPublicoDTO> infoPorDocumento(@RequestParam String documento, @RequestParam Long eventoId) {
         Certificado cert = service.buscarPorDocumentoYEvento(documento, eventoId);
-        var evento = cert.getAsistencia().getInscripcion().getEvento();
+        var evento = cert.getInscripcion().getEvento();
 
         CertificadoPublicoDTO dto = new CertificadoPublicoDTO();
-        dto.setParticipanteNombre(cert.getAsistencia().getInscripcion().getParticipante().getNombre()
-                + " " + cert.getAsistencia().getInscripcion().getParticipante().getApellido());
+        dto.setParticipanteNombre(cert.getInscripcion().getParticipante().getNombre()
+                + " " + cert.getInscripcion().getParticipante().getApellido());
         dto.setEventoNombre(evento.getNombre());
         dto.setDuracionHoras(cert.getDuracionHoras());
         dto.setFechasEvento(CertificacionService.formatearFechasEvento(evento.getFechaInicio(), evento.getFechaFin()));
@@ -56,11 +56,11 @@ public class CertificacionController {
     @GetMapping("/verificar/{codigo}")
     public ResponseEntity<CertificadoPublicoDTO> verificar(@PathVariable String codigo) {
         Certificado cert = service.verificarPorCodigo(codigo);
-        var evento = cert.getAsistencia().getInscripcion().getEvento();
+        var evento = cert.getInscripcion().getEvento();
 
         CertificadoPublicoDTO dto = new CertificadoPublicoDTO();
-        dto.setParticipanteNombre(cert.getAsistencia().getInscripcion().getParticipante().getNombre()
-                + " " + cert.getAsistencia().getInscripcion().getParticipante().getApellido());
+        dto.setParticipanteNombre(cert.getInscripcion().getParticipante().getNombre()
+                + " " + cert.getInscripcion().getParticipante().getApellido());
         dto.setEventoNombre(evento.getNombre());
         dto.setDuracionHoras(cert.getDuracionHoras());
         dto.setFechasEvento(CertificacionService.formatearFechasEvento(evento.getFechaInicio(), evento.getFechaFin()));

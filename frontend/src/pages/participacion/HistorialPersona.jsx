@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   Search, IdCard, Mail, Phone, User, Calendar,
-  CheckCircle2, XCircle, Award, FileSearch
+  CheckCircle2, XCircle, Award, FileSearch, Clock, AlertCircle
 } from 'lucide-react';
 
 const CRITERIOS = {
@@ -146,9 +146,18 @@ export default function HistorialPersona() {
                     </div>
 
                     <div className="flex items-center gap-2 text-sm">
-                      {insc.asistio ? (
+                      {insc.asistioCompleto ? (
                         <span className="flex items-center gap-1 text-emerald-600 font-medium">
-                          <CheckCircle2 className="w-4 h-4" /> Asistió
+                          <CheckCircle2 className="w-4 h-4" />
+                          Asistió {insc.totalJornadas > 1 ? `(${insc.diasAsistidos}/${insc.totalJornadas} días)` : ''}
+                        </span>
+                      ) : insc.diasAsistidos > 0 ? (
+                        <span className="flex items-center gap-1 text-amber-500 font-medium">
+                          <AlertCircle className="w-4 h-4" /> Asistencia parcial ({insc.diasAsistidos}/{insc.totalJornadas} días)
+                        </span>
+                      ) : insc.eventoEstado === 'PROGRAMADO' ? (
+                        <span className="flex items-center gap-1 text-blue-500 font-medium">
+                          <Clock className="w-4 h-4" /> Pendiente
                         </span>
                       ) : (
                         <span className="flex items-center gap-1 text-slate-400">

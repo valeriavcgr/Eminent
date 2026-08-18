@@ -208,7 +208,7 @@ export default function RecibirCertificado() {
               onClick={() => compartirEnLinkedIn(info.codigoUnico)}
               className="flex items-center justify-center py-3 px-4 rounded-xl text-sm font-bold text-white bg-[#0A66C2] hover:bg-[#004182] transition-all"
             >
-              <Share2 className="w-4 h-4 mr-2" /> Compartir
+              <Share2 className="w-4 h-4 mr-2" /> Compartir en Linkedin
             </button>
           </div>
 

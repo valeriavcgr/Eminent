@@ -2,7 +2,6 @@ package com.example.Eminent.asistencia.dto;
 
 import lombok.Getter;
 import lombok.Setter;
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -18,10 +17,10 @@ public class ParticipanteAsistenciaDTO {
     private String participanteCorreo;
     /** Número de teléfono del participante. */
     private String participanteTelefono;
-    /** Indica si el participante asistió al evento. */
-    private boolean asistio;
-    /** Fecha y hora en que el participante registró su asistencia (null si no asistió). */
-    private LocalDateTime fechaHoraAsistencia;
-    /** Método de registro de asistencia (MANUAL, QR) o null si no ha registrado asistencia. */
-    private String metodo;
+    /** Cantidad de jornadas del evento a las que asistió. */
+    private int diasAsistidos;
+    /** Indica si asistió a todas las jornadas del evento (requisito para certificarse). */
+    private boolean asistioCompleto;
+    /** Indica si ya registró asistencia en la jornada actualmente activa. */
+    private boolean asistioJornadaActiva;
 }

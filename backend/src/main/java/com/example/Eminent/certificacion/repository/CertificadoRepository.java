@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface CertificadoRepository extends JpaRepository<Certificado, Long> {
-    Optional<Certificado> findByAsistenciaId(Long asistenciaId);
+    Optional<Certificado> findByInscripcion_Id(Long inscripcionId);
+    boolean existsByInscripcion_Id(Long inscripcionId);
     Optional<Certificado> findByCodigoUnico(String codigoUnico);
 }

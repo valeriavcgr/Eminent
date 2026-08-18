@@ -5,9 +5,13 @@ import com.example.Eminent.asistencia.entity.Asistencia;
 import com.example.Eminent.asistencia.repository.AsistenciaRepository;
 import com.example.Eminent.auditoria.entity.Auditoria;
 import com.example.Eminent.auditoria.service.AuditoriaService;
+import com.example.Eminent.eventos.dto.EventoDiaDTO;
 import com.example.Eminent.eventos.entity.Evento;
+import com.example.Eminent.eventos.entity.EventoDia;
+import com.example.Eminent.eventos.repository.EventoDiaRepository;
 import com.example.Eminent.eventos.repository.EventoMonitorRepository;
 import com.example.Eminent.eventos.repository.EventoRepository;
+import com.example.Eminent.eventos.service.EventoDiaService;
 import com.example.Eminent.participacion.entity.Inscripcion;
 import com.example.Eminent.participacion.repository.InscripcionRepository;
 import com.example.Eminent.usuarios.entity.Usuario;
@@ -16,8 +20,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 public class AsistenciaService {
@@ -25,6 +32,8 @@ public class AsistenciaService {
     @Autowired private AsistenciaRepository asistenciaRepo;
     @Autowired private InscripcionRepository inscripcionRepo;
     @Autowired private EventoRepository eventoRepo;
+    @Autowired private EventoDiaRepository eventoDiaRepo;
+    @Autowired private EventoDiaService eventoDiaService;
     @Autowired private EventoMonitorRepository eventoMonitorRepo;
     @Autowired private AuditoriaService auditoriaService;
 
@@ -38,9 +47,15 @@ public class AsistenciaService {
             validarMonitorAsignado(eventoId, usuario.getId());
         }
 
+        int totalJornadas = (int) eventoDiaRepo.countByEvento_Id(eventoId);
+        Optional<EventoDia> jornadaActivaOpt = eventoDiaService.obtenerJornadaActivaOpcional(eventoId);
+
         List<Inscripcion> activas = inscripcionRepo
                 .findByEventoIdAndEstado(eventoId, Inscripcion.Estado.ACTIVA, Pageable.unpaged())
                 .getContent();
+
+        Map<Long, List<Asistencia>> asistenciasPorInscripcion = asistenciaRepo.findByInscripcion_Evento_Id(eventoId)
+                .stream().collect(Collectors.groupingBy(a -> a.getInscripcion().getId()));
 
         List<ParticipanteAsistenciaDTO> lista = activas.stream().map(i -> {
             ParticipanteAsistenciaDTO dto = new ParticipanteAsistenciaDTO();
@@ -50,28 +65,31 @@ public class AsistenciaService {
             dto.setParticipanteCorreo(i.getParticipante().getCorreo());
             dto.setParticipanteTelefono(i.getParticipante().getTelefono());
 
-            asistenciaRepo.findByInscripcionId(i.getId()).ifPresentOrElse(a -> {
-                dto.setAsistio(true);
-                dto.setFechaHoraAsistencia(a.getFechaHora());
-                dto.setMetodo(a.getMetodo().name());
-            }, () -> dto.setAsistio(false));
+            List<Asistencia> mias = asistenciasPorInscripcion.getOrDefault(i.getId(), List.of());
+            dto.setDiasAsistidos(mias.size());
+            dto.setAsistioCompleto(totalJornadas > 0 && mias.size() == totalJornadas);
+            dto.setAsistioJornadaActiva(jornadaActivaOpt.isPresent() && mias.stream()
+                    .anyMatch(a -> a.getEventoDia().getId().equals(jornadaActivaOpt.get().getId())));
 
             return dto;
         }).toList();
 
         long totalInscritos = lista.size();
-        long totalAsistieron = lista.stream().filter(ParticipanteAsistenciaDTO::isAsistio).count();
-        double porcentaje = evento.getAforo() > 0 ? (totalAsistieron * 100.0 / evento.getAforo()) : 0;
+        long totalAsistieron = lista.stream().filter(p -> p.getDiasAsistidos() > 0).count();
+        double porcentaje = totalInscritos > 0 ? (totalAsistieron * 100.0 / totalInscritos) : 0;
 
         ResumenAsistenciaDTO resumen = new ResumenAsistenciaDTO();
         resumen.setTotalInscritos(totalInscritos);
         resumen.setTotalAsistieron(totalAsistieron);
-        resumen.setPorcentajeAforoOcupado(porcentaje);
+        resumen.setPorcentajeAsistencia(porcentaje);
 
         ListadoAsistenciaDTO resultado = new ListadoAsistenciaDTO();
         resultado.setResumen(resumen);
         resultado.setParticipantes(lista);
+        resultado.setEventoNombre(evento.getNombre());
         resultado.setEventoEstado(evento.getEstado().name());
+        resultado.setTotalJornadas(totalJornadas);
+        resultado.setJornadaActiva(jornadaActivaOpt.map(this::toJornadaDTO).orElse(null));
         return resultado;
     }
 
@@ -79,21 +97,25 @@ public class AsistenciaService {
         Inscripcion inscripcion = inscripcionRepo.findById(inscripcionId)
                 .orElseThrow(() -> new IllegalArgumentException("Inscripción no encontrada"));
 
-        validarMonitorAsignado(inscripcion.getEvento().getId(), monitor.getId());
+        Long eventoId = inscripcion.getEvento().getId();
+        validarMonitorAsignado(eventoId, monitor.getId());
         validarEventoEnCurso(inscripcion.getEvento());
+        EventoDia jornada = eventoDiaService.obtenerJornadaActiva(eventoId);
 
-        if (asistenciaRepo.existsByInscripcionId(inscripcionId)) {
-            throw new IllegalArgumentException("Este participante ya registró asistencia");
+        if (asistenciaRepo.existsByInscripcion_IdAndEventoDia_Id(inscripcionId, jornada.getId())) {
+            throw new IllegalArgumentException("Este participante ya registró asistencia en la jornada de hoy");
         }
 
         Asistencia asistencia = new Asistencia();
         asistencia.setInscripcion(inscripcion);
+        asistencia.setEventoDia(jornada);
         asistencia.setMetodo(Asistencia.Metodo.MANUAL);
         asistencia.setRegistradoPor(monitor);
         Asistencia guardada = asistenciaRepo.save(asistencia);
 
         auditoriaService.registrar(monitor, Auditoria.Accion.CREAR, Auditoria.TipoAfectado.ASISTENCIA,
-                guardada.getId(), "Registro manual de asistencia para inscripción " + inscripcionId, null);
+                guardada.getId(), "Registro manual de asistencia para inscripción " + inscripcionId
+                        + " (jornada " + jornada.getNumeroDia() + ")", null);
 
         return guardada;
     }
@@ -114,19 +136,22 @@ public class AsistenciaService {
 
         validarMonitorAsignado(eventoId, monitor.getId());
         validarEventoEnCurso(inscripcion.getEvento());
+        EventoDia jornada = eventoDiaService.obtenerJornadaActiva(eventoId);
 
-        if (asistenciaRepo.existsByInscripcionId(inscripcionId)) {
-            throw new IllegalArgumentException("Este participante ya registró asistencia");
+        if (asistenciaRepo.existsByInscripcion_IdAndEventoDia_Id(inscripcionId, jornada.getId())) {
+            throw new IllegalArgumentException("Este participante ya registró asistencia en la jornada de hoy");
         }
 
         Asistencia asistencia = new Asistencia();
         asistencia.setInscripcion(inscripcion);
+        asistencia.setEventoDia(jornada);
         asistencia.setMetodo(Asistencia.Metodo.QR);
         asistencia.setRegistradoPor(monitor);
         Asistencia guardada = asistenciaRepo.save(asistencia);
 
         auditoriaService.registrar(monitor, Auditoria.Accion.CREAR, Auditoria.TipoAfectado.ASISTENCIA,
-                guardada.getId(), "Registro de asistencia por QR para inscripción " + inscripcionId, null);
+                guardada.getId(), "Registro de asistencia por QR para inscripción " + inscripcionId
+                        + " (jornada " + jornada.getNumeroDia() + ")", null);
 
         return guardada;
     }
@@ -149,5 +174,10 @@ public class AsistenciaService {
         if (evento.getEstado() != Evento.Estado.EN_CURSO) {
             throw new IllegalArgumentException("Solo se puede registrar asistencia mientras el evento está en curso");
         }
+    }
+
+    private EventoDiaDTO toJornadaDTO(EventoDia jornada) {
+        return new EventoDiaDTO(jornada.getId(), jornada.getNumeroDia(), jornada.getFecha(),
+                jornada.getHoraInicio(), jornada.getHoraFin());
     }
 }

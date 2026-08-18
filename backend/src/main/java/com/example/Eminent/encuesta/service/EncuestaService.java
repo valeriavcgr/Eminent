@@ -27,14 +27,14 @@ public class EncuestaService {
         Certificado certificado = certificadoRepo.findByCodigoUnico(datos.getCodigoUnico())
                 .orElseThrow(() -> new IllegalArgumentException("Certificado no encontrado"));
 
-        Long asistenciaId = certificado.getAsistencia().getId();
+        Long inscripcionId = certificado.getInscripcion().getId();
 
-        if (encuestaRepo.existsByAsistenciaId(asistenciaId)) {
+        if (encuestaRepo.existsByInscripcionId(inscripcionId)) {
             throw new IllegalArgumentException("Ya has calificado este evento anteriormente");
         }
 
         Encuesta encuesta = new Encuesta();
-        encuesta.setAsistencia(certificado.getAsistencia());
+        encuesta.setInscripcion(certificado.getInscripcion());
         encuesta.setCalificacion(datos.getCalificacion());
         encuesta.setComentario(datos.getComentario());
         Encuesta guardada = encuestaRepo.save(encuesta);
@@ -47,7 +47,7 @@ public class EncuestaService {
         Page<Encuesta> encuestas = encuestaRepo.buscarPorEvento(eventoId, calificacion, pageable);
 
         return encuestas.map(e -> {
-            Participante participante = e.getAsistencia().getInscripcion().getParticipante();
+            Participante participante = e.getInscripcion().getParticipante();
             EncuestaComentarioDTO dto = new EncuestaComentarioDTO();
             dto.setParticipanteNombre(participante.getNombre() + " " + participante.getApellido());
             dto.setCalificacion(e.getCalificacion());

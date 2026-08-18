@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { listarEventos, cancelarEvento, asignarMonitor } from '../../services/eventoService';
+import { listarEventos, cancelarEvento, asignarMonitor, listarMonitoresEvento } from '../../services/eventoService';
 import { listarUsuarios } from '../../services/usuarioService';
 import { listarParticipantesEvento } from '../../services/asistenciaService';
 import { obtenerComentariosEvento, obtenerPromedioEvento } from '../../services/encuestaService';
@@ -9,7 +9,9 @@ import {
   Search,
   Plus,
   Edit2,
+  Eye,
   Calendar as CalendarIcon,
+  CalendarDays,
   Users,
   Ban,
   ClipboardList,
@@ -23,13 +25,15 @@ import {
   ListFilter,
   ChevronDown,
   ChevronUp,
-  X
+  X,
+  FileText,
+  Shield
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Pagination from '../../components/Pagination';
 
@@ -50,6 +54,11 @@ export default function ListarEvento() {
   const [monitores, setMonitores] = useState([]);
   const [selectedMonitor, setSelectedMonitor] = useState('');
   const [isAssigning, setIsAssigning] = useState(false);
+
+  const [detalleModalOpen, setDetalleModalOpen] = useState(false);
+  const [eventoDetalle, setEventoDetalle] = useState(null);
+  const [monitoresDetalle, setMonitoresDetalle] = useState([]);
+  const [cargandoDetalle, setCargandoDetalle] = useState(false);
 
   const [encuestaModalOpen, setEncuestaModalOpen] = useState(false);
   const [eventoEncuesta, setEventoEncuesta] = useState(null);
@@ -112,8 +121,15 @@ export default function ListarEvento() {
     setEventoToAssign(evento);
     setAssignModalOpen(true);
     try {
-      const data = await listarUsuarios('MONITOR');
-      setMonitores(data || []);
+      const [data, asignados] = await Promise.all([
+        listarUsuarios('MONITOR'),
+        listarMonitoresEvento(evento.id),
+      ]);
+      const idsAsignados = new Set((asignados || []).map((m) => m.monitorId));
+      const disponibles = (data || []).filter(
+        (m) => m.estado === 'ACTIVO' && !idsAsignados.has(m.id)
+      );
+      setMonitores(disponibles);
     } catch (error) {
       toast.error('Error al cargar la lista de monitores');
     }
@@ -132,6 +148,20 @@ export default function ListarEvento() {
       toast.error(error.response?.data?.mensaje || 'Error al asignar monitor');
     } finally {
       setIsAssigning(false);
+    }
+  };
+
+  const abrirDetalleModal = async (evento) => {
+    setEventoDetalle(evento);
+    setDetalleModalOpen(true);
+    setCargandoDetalle(true);
+    try {
+      const data = await listarMonitoresEvento(evento.id);
+      setMonitoresDetalle(data || []);
+    } catch (error) {
+      setMonitoresDetalle([]);
+    } finally {
+      setCargandoDetalle(false);
     }
   };
 
@@ -346,6 +376,7 @@ export default function ListarEvento() {
                   <th className="px-6 py-4">Información del Evento</th>
                   <th className="px-6 py-4">Modalidad</th>
                   <th className="px-6 py-4">Fecha de Inicio</th>
+                  <th className="px-6 py-4">Fecha de Fin</th>
                   <th className="px-6 py-4">Cupos</th>
                   <th className="px-6 py-4">Estado</th>
                   <th className="px-6 py-4 text-right">Acciones</th>
@@ -354,13 +385,13 @@ export default function ListarEvento() {
               <tbody className="divide-y divide-slate-200">
                 {isLoading ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-8 text-center text-slate-500">
+                    <td colSpan="7" className="px-6 py-8 text-center text-slate-500">
                       Cargando eventos...
                     </td>
                   </tr>
                 ) : eventosPagina.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-8 text-center text-slate-500">
+                    <td colSpan="7" className="px-6 py-8 text-center text-slate-500">
                       No se encontraron eventos
                     </td>
                   </tr>
@@ -391,6 +422,12 @@ export default function ListarEvento() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center text-slate-600">
+                          <CalendarDays className="w-4 h-4 mr-2" />
+                          <span>{e.fechaFin ? format(new Date(e.fechaFin), "d MMM, yyyy - HH:mm", { locale: es }) : 'Por definir'}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center text-slate-600">
                           <Users className="w-4 h-4 mr-2" />
                           <span>{e.aforo}</span>
                         </div>
@@ -402,6 +439,14 @@ export default function ListarEvento() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon={Eye}
+                            onClick={() => abrirDetalleModal(e)}
+                            title="Ver detalle del evento"
+                          />
+
                           {e.estado !== 'CANCELADO' && e.estado !== 'FINALIZADO' && (
                             <>
                               <Button
@@ -516,28 +561,132 @@ export default function ListarEvento() {
       </Modal>
 
       <Modal
+        isOpen={detalleModalOpen}
+        onClose={() => setDetalleModalOpen(false)}
+        title="Detalle del Evento"
+      >
+        {eventoDetalle && (
+          <div className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-lg font-bold text-slate-900">{eventoDetalle.nombre}</h3>
+                <Badge variant={getEstadoColor(eventoDetalle.estado)}>{eventoDetalle.estado}</Badge>
+              </div>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getTipoColor(eventoDetalle.tipo)}`}>
+                  {eventoDetalle.tipo}
+                </span>
+                <span className="flex items-center gap-1 text-xs text-slate-500">
+                  {eventoDetalle.modalidad === 'VIRTUAL' ? <Clock className="w-3.5 h-3.5" /> : <MapPin className="w-3.5 h-3.5" />}
+                  <span className="capitalize">{eventoDetalle.modalidad?.toLowerCase()}</span>
+                </span>
+              </div>
+              {eventoDetalle.descripcion && (
+                <p className="text-sm text-slate-600 mt-3 flex gap-2">
+                  <FileText className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
+                  {eventoDetalle.descripcion}
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-slate-50 rounded-lg p-3 text-center border border-slate-100">
+                <p className="text-xs font-medium text-slate-500">Aforo</p>
+                <p className="text-lg font-bold text-slate-800">{eventoDetalle.aforo}</p>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-3 text-center border border-slate-100">
+                <p className="text-xs font-medium text-slate-500">Inscritos</p>
+                <p className="text-lg font-bold text-slate-800">{eventoDetalle.inscritos ?? 0}</p>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-3 text-center border border-slate-100">
+                <p className="text-xs font-medium text-slate-500">Jornadas</p>
+                <p className="text-lg font-bold text-slate-800">{eventoDetalle.jornadas?.length ?? 0}</p>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5 mb-2">
+                <CalendarDays className="w-4 h-4" /> Jornadas del Evento
+              </h4>
+              {eventoDetalle.jornadas && eventoDetalle.jornadas.length > 0 ? (
+                <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-100">
+                  {eventoDetalle.jornadas
+                    .slice()
+                    .sort((a, b) => a.numeroDia - b.numeroDia)
+                    .map((j) => (
+                      <div key={j.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                        <span className="font-medium text-slate-700">Día {j.numeroDia}</span>
+                        <span className="text-slate-600">
+                          {j.fecha ? format(parseISO(j.fecha), "d MMM yyyy", { locale: es }) : '—'}
+                        </span>
+                        <span className="flex items-center gap-1 text-slate-500">
+                          <Clock className="w-3.5 h-3.5" />
+                          {j.horaInicio?.slice(0, 5)} – {j.horaFin?.slice(0, 5)}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400">Sin jornadas registradas.</p>
+              )}
+            </div>
+
+            <div>
+              <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5 mb-2">
+               Monitores Asignados
+              </h4>
+              {cargandoDetalle ? (
+                <p className="text-sm text-slate-400">Cargando...</p>
+              ) : monitoresDetalle.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {monitoresDetalle.map((m) => (
+                    <span key={m.monitorId} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-200 text-xs font-medium">
+                      <Users className="w-3.5 h-3.5" /> {m.monitorNombre}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400">Ningún monitor asignado todavía.</p>
+              )}
+            </div>
+
+            <div className="text-xs text-slate-400 border-t border-slate-100 pt-3">
+              Creado el {eventoDetalle.fechaCreacion ? format(new Date(eventoDetalle.fechaCreacion), "d MMM yyyy - HH:mm", { locale: es }) : '—'}
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
         isOpen={assignModalOpen}
         onClose={() => setAssignModalOpen(false)}
         title="Asignar Monitor"
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
-            Selecciona el usuario (Monitor) que deseas asignar al evento <strong>{eventoToAssign?.nombre}</strong> para encargarse del control de asistencia y escaneo de códigos QR.
+            Selecciona el Monitor que deseas asignar al evento <strong>{eventoToAssign?.nombre}</strong> para encargarse del control de asistencia y escaneo de códigos QR.
           </p>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Monitor disponible</label>
-            <select
-              className="block w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
-              value={selectedMonitor}
-              onChange={(e) => setSelectedMonitor(e.target.value)}
-            >
-              <option value="">Seleccione un monitor...</option>
-              {monitores.map(m => (
-                <option key={m.id} value={m.id}>{m.nombre} ({m.correo})</option>
-              ))}
-            </select>
-          </div>
+          {monitores.length === 0 ? (
+            <div className="flex flex-col items-center text-center gap-1.5 py-4 px-3 bg-slate-50 border border-slate-200 rounded-lg">
+              <Users className="w-5 h-5 text-slate-400" />
+              <p className="text-sm font-medium text-slate-600">No hay monitores disponibles</p>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Monitor disponible</label>
+              <select
+                className="block w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+                value={selectedMonitor}
+                onChange={(e) => setSelectedMonitor(e.target.value)}
+              >
+                <option value="">Seleccione un monitor...</option>
+                {monitores.map(m => (
+                  <option key={m.id} value={m.id}>{m.nombre} ({m.correo})</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="flex w-full gap-3 mt-4">
             <Button
@@ -548,13 +697,15 @@ export default function ListarEvento() {
             >
               Cancelar
             </Button>
-            <Button
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={handleAssignMonitor}
-              disabled={!selectedMonitor || isAssigning}
-            >
-              {isAssigning ? 'Asignando...' : 'Guardar Asignación'}
-            </Button>
+            {monitores.length > 0 && (
+              <Button
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={handleAssignMonitor}
+                disabled={!selectedMonitor || isAssigning}
+              >
+                {isAssigning ? 'Asignando...' : 'Guardar Asignación'}
+              </Button>
+            )}
           </div>
         </div>
       </Modal>
@@ -580,7 +731,7 @@ export default function ListarEvento() {
               <div className="bg-slate-50 rounded-lg p-3 text-center border border-slate-100">
                 <p className="text-xs font-medium text-slate-500">% Asistencia</p>
                 <p className="text-lg font-bold text-slate-800">
-                  {resumenEncuesta ? `${resumenEncuesta.porcentajeAforoOcupado.toFixed(0)}%` : '—'}
+                  {resumenEncuesta ? `${resumenEncuesta.porcentajeAsistencia.toFixed(0)}%` : '—'}
                 </p>
               </div>
               <div className="bg-amber-50 rounded-lg p-3 text-center border border-amber-100">

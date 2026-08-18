@@ -12,7 +12,10 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  ArrowLeft
+  ArrowLeft,
+  CalendarDays,
+  AlertTriangle,
+  AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -69,7 +72,8 @@ export default function ListaAsistencia() {
   }
 
   const eventoTerminado = datos.eventoEstado === 'FINALIZADO' || datos.eventoEstado === 'CANCELADO';
-  const puedeRegistrarAsistencia = datos.eventoEstado === 'EN_CURSO';
+  const puedeRegistrarAsistencia = datos.eventoEstado === 'EN_CURSO' && Boolean(datos.jornadaActiva);
+  const esMultiDia = datos.totalJornadas > 1;
 
   return (
     <div className="space-y-6">
@@ -85,6 +89,7 @@ export default function ListaAsistencia() {
             />
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">Control de Asistencia</h1>
           </div>
+          <p className="text-sm text-slate-500 mt-1 ml-8">{datos.eventoNombre}</p>
         </div>
 
         {isMonitor && puedeRegistrarAsistencia && (
@@ -97,6 +102,25 @@ export default function ListaAsistencia() {
           </Button>
         )}
       </div>
+
+      {datos.eventoEstado === 'EN_CURSO' && (
+        <div className={`p-4 rounded-lg border flex items-center gap-3 ${datos.jornadaActiva ? 'bg-blue-50 border-blue-200 text-blue-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+          {datos.jornadaActiva ? (
+            <>
+              <CalendarDays className="w-5 h-5 flex-shrink-0" />
+              <p className="text-sm font-medium">
+                Jornada activa: Día {datos.jornadaActiva.numeroDia} de {datos.totalJornadas}
+                {' '}({datos.jornadaActiva.horaInicio?.slice(0, 5)} – {datos.jornadaActiva.horaFin?.slice(0, 5)})
+              </p>
+            </>
+          ) : (
+            <>
+              <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+              <p className="text-sm font-medium">No hay ninguna jornada en curso en este momento. No se puede registrar asistencia.</p>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
@@ -127,8 +151,8 @@ export default function ListaAsistencia() {
               <Percent className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500">% Aforo Ocupado</p>
-              <h3 className="text-2xl font-bold text-slate-900">{datos.resumen.porcentajeAforoOcupado.toFixed(1)}%</h3>
+              <p className="text-sm font-medium text-slate-500">% Asistencia</p>
+              <h3 className="text-2xl font-bold text-slate-900">{datos.resumen.porcentajeAsistencia.toFixed(1)}%</h3>
             </div>
           </CardContent>
         </Card>
@@ -147,15 +171,14 @@ export default function ListaAsistencia() {
                   <th className="px-6 py-4">Documento</th>
                   <th className="p-3 text-left">Correo</th>
                   <th className="p-3 text-left">Teléfono</th>
-                  <th className="px-6 py-4">Estado</th>
-                  <th className="px-6 py-4">Método</th>
+                  <th className="px-6 py-4">{esMultiDia ? 'Asistencia' : 'Estado'}</th>
                   {isMonitor && puedeRegistrarAsistencia && <th className="px-6 py-4 text-right">Acciones</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {datos.participantes.length === 0 ? (
                   <tr>
-                    <td colSpan={isMonitor ? "7" : "6"} className="px-6 py-8 text-center text-slate-500">
+                    <td colSpan={isMonitor ? "6" : "5"} className="px-6 py-8 text-center text-slate-500">
                       No hay participantes registrados.
                     </td>
                   </tr>
@@ -171,10 +194,15 @@ export default function ListaAsistencia() {
                       <td className="p-3">{p.participanteCorreo || '-'}</td>
                       <td className="p-3">{p.participanteTelefono || '-'}</td>
                       <td className="px-6 py-4">
-                        {p.asistio ? (
+                        {p.asistioCompleto ? (
                           <div className="flex items-center text-green-600 font-medium">
                             <CheckCircle2 className="w-4 h-4 mr-1" />
-                            <span>Asistió</span>
+                            <span>{esMultiDia ? `${p.diasAsistidos}/${datos.totalJornadas} días` : 'Asistió'}</span>
+                          </div>
+                        ) : p.diasAsistidos > 0 ? (
+                          <div className="flex items-center text-amber-600 font-medium">
+                            <AlertCircle className="w-4 h-4 mr-1" />
+                            <span>{p.diasAsistidos}/{datos.totalJornadas} días</span>
                           </div>
                         ) : eventoTerminado ? (
                           <div className="flex items-center text-red-400">
@@ -188,12 +216,9 @@ export default function ListaAsistencia() {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-slate-600 capitalize">
-                        {p.metodo ? p.metodo.toLowerCase() : '-'}
-                      </td>
                       {isMonitor && puedeRegistrarAsistencia && (
                         <td className="px-6 py-4 text-right">
-                          {!p.asistio && (
+                          {!p.asistioJornadaActiva && (
                             <Button
                               size="sm"
                               variant="secondary"

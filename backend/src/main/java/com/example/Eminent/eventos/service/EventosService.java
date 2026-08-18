@@ -1,9 +1,13 @@
 package com.example.Eminent.eventos.service;
+import com.example.Eminent.asistencia.repository.AsistenciaRepository;
 import com.example.Eminent.auditoria.entity.Auditoria;
 import com.example.Eminent.auditoria.service.AuditoriaService;
 import com.example.Eminent.eventos.dto.EventoDTO;
+import com.example.Eminent.eventos.dto.EventoDiaDTO;
 import com.example.Eminent.eventos.entity.Evento;
+import com.example.Eminent.eventos.entity.EventoDia;
 import com.example.Eminent.eventos.entity.EventoMonitor;
+import com.example.Eminent.eventos.repository.EventoDiaRepository;
 import com.example.Eminent.eventos.repository.EventoMonitorRepository;
 import com.example.Eminent.eventos.repository.EventoRepository;
 import com.example.Eminent.participacion.entity.Inscripcion;
@@ -17,7 +21,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 @Service
@@ -38,11 +46,47 @@ public class EventosService {
     @Autowired
     private InscripcionRepository inscripcionRepository;
 
+    @Autowired
+    private EventoDiaRepository eventoDiaRepository;
+
+    @Autowired
+    private AsistenciaRepository asistenciaRepository;
+
+    private void validarJornadas(List<EventoDiaDTO> jornadas) {
+        if (jornadas == null || jornadas.isEmpty()) {
+            throw new IllegalArgumentException("El evento debe tener al menos una jornada");
+        }
+        Set<java.time.LocalDate> fechasVistas = new HashSet<>();
+        for (EventoDiaDTO j : jornadas) {
+            if (j.getFecha() == null || j.getHoraInicio() == null || j.getHoraFin() == null) {
+                throw new IllegalArgumentException("Cada jornada requiere fecha, hora de inicio y hora de fin");
+            }
+            if (!j.getHoraFin().isAfter(j.getHoraInicio())) {
+                throw new IllegalArgumentException("La hora de fin de cada jornada debe ser posterior a la hora de inicio");
+            }
+            if (!fechasVistas.add(j.getFecha())) {
+                throw new IllegalArgumentException("No puede haber dos jornadas con la misma fecha (" + j.getFecha() + ")");
+            }
+        }
+    }
+
+    private void recalcularRangoEvento(Evento evento, List<EventoDia> jornadas) {
+        LocalDateTime inicio = jornadas.stream()
+                .map(j -> LocalDateTime.of(j.getFecha(), j.getHoraInicio()))
+                .min(LocalDateTime::compareTo)
+                .orElseThrow();
+        LocalDateTime fin = jornadas.stream()
+                .map(j -> LocalDateTime.of(j.getFecha(), j.getHoraFin()))
+                .max(LocalDateTime::compareTo)
+                .orElseThrow();
+        evento.setFechaInicio(inicio);
+        evento.setFechaFin(fin);
+    }
+
     @Transactional
     public Evento crear(EventoDTO dto, Usuario usuario) {
         if (dto.getNombre() == null || dto.getNombre().isBlank() ||
                 dto.getTipo() == null || dto.getModalidad() == null ||
-                dto.getFechaInicio() == null || dto.getFechaFin() == null ||
                 dto.getAforo() == null) {
             throw new IllegalArgumentException("Todos los campos son obligatorios");
         }
@@ -51,32 +95,103 @@ public class EventosService {
             throw new IllegalArgumentException("Ya existe un evento con este nombre para el tipo seleccionado");
         }
 
-        if (dto.getFechaFin().isBefore(dto.getFechaInicio())) {
-            throw new IllegalArgumentException("La fecha de fin debe ser igual o posterior a la fecha de inicio");
-        }
-        //validacion de que un evento solo puede ser de un día, en el futuro manejarlo de varios días
-        if (!dto.getFechaInicio().toLocalDate().equals(dto.getFechaFin().toLocalDate())) {
-            throw new IllegalArgumentException("El evento debe iniciar y finalizar el mismo día (no se admiten eventos de varios días en esta versión)");
-        }
+        validarJornadas(dto.getJornadas());
 
         Evento evento = new Evento();
         evento.setNombre(dto.getNombre());
         evento.setTipo(Evento.Tipo.valueOf(dto.getTipo()));
         evento.setModalidad(Evento.Modalidad.valueOf(dto.getModalidad()));
         evento.setDescripcion(dto.getDescripcion());
-        evento.setFechaInicio(dto.getFechaInicio());
-        evento.setFechaFin(dto.getFechaFin());
         evento.setAforo(dto.getAforo());
         evento.setEstado(Evento.Estado.PROGRAMADO);
         evento.setCreadoPor(usuario);
         evento.setFechaCreacion(LocalDateTime.now());
 
+        List<EventoDiaDTO> jornadasOrdenadas = dto.getJornadas().stream()
+                .sorted((a, b) -> a.getFecha().compareTo(b.getFecha()))
+                .toList();
+        LocalDateTime inicioProvisional = LocalDateTime.of(jornadasOrdenadas.get(0).getFecha(), jornadasOrdenadas.get(0).getHoraInicio());
+        LocalDateTime finProvisional = jornadasOrdenadas.stream()
+                .map(j -> LocalDateTime.of(j.getFecha(), j.getHoraFin()))
+                .max(LocalDateTime::compareTo).orElseThrow();
+        evento.setFechaInicio(inicioProvisional);
+        evento.setFechaFin(finProvisional);
+
         Evento guardado = eventoRepository.save(evento);
+
+        List<EventoDia> jornadasGuardadas = new java.util.ArrayList<>();
+        int numero = 1;
+        for (EventoDiaDTO j : jornadasOrdenadas) {
+            EventoDia jornada = new EventoDia();
+            jornada.setEvento(guardado);
+            jornada.setNumeroDia(numero++);
+            jornada.setFecha(j.getFecha());
+            jornada.setHoraInicio(j.getHoraInicio());
+            jornada.setHoraFin(j.getHoraFin());
+            jornadasGuardadas.add(eventoDiaRepository.save(jornada));
+        }
+
+        recalcularRangoEvento(guardado, jornadasGuardadas);
+        guardado = eventoRepository.save(guardado);
 
         auditoriaService.registrar(usuario, Auditoria.Accion.CREAR, Auditoria.TipoAfectado.EVENTO,
                 guardado.getId(), "Creación de evento " + guardado.getNombre() + " tipo " + guardado.getTipo(), null);
 
         return guardado;
+    }
+
+    public List<EventoDia> listarJornadas(Long eventoId) {
+        return eventoDiaRepository.findByEvento_IdOrderByNumeroDiaAsc(eventoId);
+    }
+
+    private void sincronizarJornadas(Evento evento, List<EventoDiaDTO> dtoJornadas) {
+        validarJornadas(dtoJornadas);
+
+        List<EventoDia> existentes = eventoDiaRepository.findByEvento_IdOrderByNumeroDiaAsc(evento.getId());
+        Map<Long, EventoDia> porId = new HashMap<>();
+        for (EventoDia e : existentes) porId.put(e.getId(), e);
+        Set<Long> idsEnPayload = new HashSet<>();
+
+        for (EventoDiaDTO d : dtoJornadas) {
+            if (d.getId() != null && porId.containsKey(d.getId())) {
+                EventoDia existente = porId.get(d.getId());
+                boolean tieneAsistencias = asistenciaRepository.existsByEventoDia_Id(existente.getId());
+                if (tieneAsistencias && (!existente.getFecha().equals(d.getFecha())
+                        || !existente.getHoraInicio().equals(d.getHoraInicio())
+                        || !existente.getHoraFin().equals(d.getHoraFin()))) {
+                    throw new IllegalArgumentException("No se puede modificar una jornada que ya registró asistencias");
+                }
+                existente.setFecha(d.getFecha());
+                existente.setHoraInicio(d.getHoraInicio());
+                existente.setHoraFin(d.getHoraFin());
+                eventoDiaRepository.save(existente);
+                idsEnPayload.add(existente.getId());
+            } else {
+                EventoDia nueva = new EventoDia();
+                nueva.setEvento(evento);
+                nueva.setFecha(d.getFecha());
+                nueva.setHoraInicio(d.getHoraInicio());
+                nueva.setHoraFin(d.getHoraFin());
+                eventoDiaRepository.save(nueva);
+            }
+        }
+
+        for (EventoDia existente : existentes) {
+            if (!idsEnPayload.contains(existente.getId())) {
+                if (asistenciaRepository.existsByEventoDia_Id(existente.getId())) {
+                    throw new IllegalArgumentException("No se puede eliminar una jornada que ya registró asistencias");
+                }
+                eventoDiaRepository.delete(existente);
+            }
+        }
+
+        List<EventoDia> actualizadas = eventoDiaRepository.findByEvento_IdOrderByFechaAsc(evento.getId());
+        for (int i = 0; i < actualizadas.size(); i++) {
+            actualizadas.get(i).setNumeroDia(i + 1);
+        }
+        eventoDiaRepository.saveAll(actualizadas);
+
+        recalcularRangoEvento(evento, actualizadas);
     }
 
     public Evento obtenerPorId(Long id) {
@@ -119,13 +234,6 @@ public class EventosService {
             throw new IllegalArgumentException("No se puede modificar un evento que ya terminó");
         }
 
-        if ((evento.getEstado() == Evento.Estado.EN_CURSO || evento.getEstado() == Evento.Estado.FINALIZADO)
-                && dto.getFechaInicio() != null) {
-            if (!dto.getFechaInicio().equals(evento.getFechaInicio())) {
-                throw new IllegalArgumentException("No se puede modificar la fecha de inicio de un evento que ya comenzó");
-            }
-        }
-
         if (dto.getNombre() != null && !dto.getNombre().isBlank() && dto.getTipo() != null) {
             Evento.Tipo tipo = Evento.Tipo.valueOf(dto.getTipo());
             boolean nombreCambiado = !evento.getNombre().equals(dto.getNombre());
@@ -151,12 +259,6 @@ public class EventosService {
         if (dto.getDescripcion() != null) {
             evento.setDescripcion(dto.getDescripcion());
         }
-        if (dto.getFechaInicio() != null) {
-            evento.setFechaInicio(dto.getFechaInicio());
-        }
-        if (dto.getFechaFin() != null) {
-            evento.setFechaFin(dto.getFechaFin());
-        }
         if (dto.getAforo() != null) {
             long inscritosActivos = inscripcionRepository.countByEventoIdAndEstado(id, Inscripcion.Estado.ACTIVA);
             if (dto.getAforo() < inscritosActivos) {
@@ -165,8 +267,8 @@ public class EventosService {
 
             evento.setAforo(dto.getAforo());
         }
-        if (!evento.getFechaInicio().toLocalDate().equals(evento.getFechaFin().toLocalDate())) {
-            throw new IllegalArgumentException("El evento debe iniciar y finalizar el mismo día (no se admiten eventos de varios días por ahora)");
+        if (dto.getJornadas() != null) {
+            sincronizarJornadas(evento, dto.getJornadas());
         }
 
         Evento actualizado = eventoRepository.save(evento);

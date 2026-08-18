@@ -25,12 +25,12 @@ public class InscripcionHistorialDTO {
     private String inscripcionEstado;
     /** Fecha y hora de la inscripción. */
     private LocalDateTime fechaInscripcion;
-    /** Indica si el participante asistió al evento. */
-    private boolean asistio;
-    /** Fecha y hora en que el participante registró su asistencia (null si no asistió). */
-    private LocalDateTime fechaAsistencia;
-    /** Método mediante el cual se registró la asistencia. */
-    private String metodoAsistencia;
+    /** Cantidad de jornadas del evento a las que asistió. */
+    private int diasAsistidos;
+    /** Total de jornadas que tuvo el evento. */
+    private int totalJornadas;
+    /** Indica si asistió a todas las jornadas del evento (requisito para certificarse). */
+    private boolean asistioCompleto;
     /** Código del certificado generado, si aplica. */
     private String codigoCertificado;
 

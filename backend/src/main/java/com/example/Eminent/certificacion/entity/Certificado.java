@@ -6,7 +6,7 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import com.example.Eminent.asistencia.entity.Asistencia;
+import com.example.Eminent.participacion.entity.Inscripcion;
 
 
 @Entity
@@ -20,8 +20,8 @@ public class Certificado {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "asistencia_id", nullable = false, unique = true)
-    private Asistencia asistencia;
+    @JoinColumn(name = "inscripcion_id", nullable = false, unique = true)
+    private Inscripcion inscripcion;
 
     @Column(name = "codigo_unico", nullable = false, unique = true)
     private String codigoUnico;

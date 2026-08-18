@@ -6,6 +6,7 @@ import com.example.Eminent.asistencia.repository.AsistenciaRepository;
 import com.example.Eminent.certificacion.entity.Certificado;
 import com.example.Eminent.certificacion.repository.CertificadoRepository;
 import com.example.Eminent.eventos.entity.Evento;
+import com.example.Eminent.eventos.repository.EventoDiaRepository;
 import com.example.Eminent.eventos.repository.EventoRepository;
 import com.example.Eminent.participacion.dto.FichaHistorialDTO;
 import com.example.Eminent.participacion.dto.InscripcionEsperaDTO;
@@ -26,7 +27,6 @@ import com.example.Eminent.participacion.dto.EstadoInscripcionDTO;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class ParticipacionService {
@@ -37,6 +37,7 @@ public class ParticipacionService {
     @Autowired private QrService qrService;
     @Autowired private AuditoriaService auditoriaService;
     @Autowired private AsistenciaRepository asistenciaRepo;
+    @Autowired private EventoDiaRepository eventoDiaRepo;
     @Autowired private CertificadoRepository certificadoRepo;
     private static final java.util.regex.Pattern PATRON_DOCUMENTO = java.util.regex.Pattern.compile("^[0-9]{8,15}$");
 
@@ -205,20 +206,15 @@ public class ParticipacionService {
                 item.setInscripcionEstado(ins.getEstado().name());
                 item.setFechaInscripcion(ins.getFechaInscripcion());
 
-                Optional<com.example.Eminent.asistencia.entity.Asistencia> asisOpt =
-                        asistenciaRepo.findByInscripcionId(ins.getId());
-                if (asisOpt.isPresent()) {
-                    com.example.Eminent.asistencia.entity.Asistencia asis = asisOpt.get();
-                    item.setAsistio(true);
-                    item.setFechaAsistencia(asis.getFechaHora());
-                    item.setMetodoAsistencia(asis.getMetodo().name());
+                int diasAsistidos = asistenciaRepo.findByInscripcion_Id(ins.getId()).size();
+                int totalJornadas = (int) eventoDiaRepo.countByEvento_Id(ev.getId());
+                item.setDiasAsistidos(diasAsistidos);
+                item.setTotalJornadas(totalJornadas);
+                item.setAsistioCompleto(totalJornadas > 0 && diasAsistidos == totalJornadas);
 
-                    certificadoRepo.findByAsistenciaId(asis.getId()).ifPresent(cert -> {
-                        item.setCodigoCertificado(cert.getCodigoUnico());
-                    });
-                } else {
-                    item.setAsistio(false);
-                }
+                certificadoRepo.findByInscripcion_Id(ins.getId()).ifPresent(cert ->
+                        item.setCodigoCertificado(cert.getCodigoUnico()));
+
                 items.add(item);
             }
             ficha.setInscripciones(items);
