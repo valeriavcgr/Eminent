@@ -78,10 +78,10 @@ verificables.
 
 Crea una base de datos vacía llamada `Eminent` en tu PostgreSQL
 
-Configura las credenciales de conexión en
+Configura la contraseña de tu base de datos en
 `backend/src/main/resources/application.properties`
-(`spring.datasource.url`, `spring.datasource.username`,
-`spring.datasource.password`).
+en `spring.datasource.password=`
+
 
 ### 2. Backend
 
